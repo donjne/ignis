@@ -5,11 +5,6 @@ import styled from 'styled-components';
 import { motion, useAnimation } from 'framer-motion';
 import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
 
-interface LucideIconProps {
-  className?: string;
-  size?: number | string;
-}
-
 // Custom hook for 3D tilt effect
 const useTilt = (ref: React.RefObject<HTMLDivElement | null>) => {
   useEffect(() => {

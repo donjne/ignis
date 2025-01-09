@@ -80,7 +80,6 @@ const StyledNavbar = styled.nav`
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 1000;
   padding: 1rem 2rem;
-
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -94,6 +93,7 @@ const StyledNavbar = styled.nav`
   }
 
   .nav-links {
+    display: flex; // Ensure this is always visible on desktop
     @media (max-width: 768px) {
       position: fixed;
       top: 4rem;
@@ -114,7 +114,7 @@ const StyledNavbar = styled.nav`
 `;
 
 const StyledNavLinks = styled.ul<NavProps>`
-  display: flex;
+  display: flex; // Always flex for desktop
   gap: 2rem;
   margin: 0;
   padding: 0;

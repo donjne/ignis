@@ -1,9 +1,19 @@
 "use client";
 
+"use client";
+
 import React, { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { motion, useAnimation } from 'framer-motion';
 import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
+
+import { Orbitron } from 'next/font/google';
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  weight: ['400', '700'], // Specify the weights you want to use
+  variable: '--font-orbitron', // CSS variable for easy use
+});
 
 // Custom hook for 3D tilt effect
 const useTilt = (ref: React.RefObject<HTMLDivElement | null>) => {
@@ -29,20 +39,39 @@ const useTilt = (ref: React.RefObject<HTMLDivElement | null>) => {
 
 // Styled Components
 const StyledContainer = styled.div`
-  background: linear-gradient(to bottom, #000000, #1a1040);
-  color: #FFFFFF;
+  background: #000;
+  color: #FFF;
   min-height: 100vh;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-orbitron);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1), transparent),
+      linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    animation: moveBackground 20s ease infinite;
+    z-index: -1;
+  }
+
+  @keyframes moveBackground {
+    0% { transform: translateX(0) translateY(0) rotate(0deg); }
+    100% { transform: translateX(100vw) translateY(100vh) rotate(360deg); }
+  }
 `;
 
 const StyledNavbar = styled.nav`
   position: sticky;
   top: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(20px);
   z-index: 1000;
   padding: 1rem 2rem;
@@ -54,6 +83,7 @@ const StyledNavbar = styled.nav`
   .nav-links {
     display: flex;
     gap: 2rem;
+    font-size: 1.1em;
 
     @media (max-width: 768px) {
       display: none;
@@ -66,7 +96,7 @@ const StyledNavbar = styled.nav`
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(25, 25, 25, 0.95);
+    background: rgba(0, 0, 0, 0.95);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -83,14 +113,14 @@ const StyledNavbar = styled.nav`
 const NavItem = styled(motion.li)`
   list-style: none;
   a {
-    color: #F3E8FF;
+    color: #FFF;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 700;
     padding: 0.5rem 1rem;
     transition: color 0.2s ease, transform 0.2s ease;
 
     &:hover {
-      color: #c9a7eb;
+      color: #888;
       transform: translateY(-2px);
     }
   }
@@ -99,9 +129,7 @@ const NavItem = styled(motion.li)`
 const Logo = styled.h1`
   font-size: 2.5em;
   font-weight: 700;
-  background: linear-gradient(to right, #8A2387, #E94057);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #FFF;
   cursor: pointer;
   transition: transform 0.3s ease;
 
@@ -112,8 +140,8 @@ const Logo = styled.h1`
 
 const Button = styled(motion.button)`
   background: transparent;
-  border: 2px solid #F3E8FF;
-  color: #F3E8FF;
+  border: 2px solid #FFF;
+  color: #FFF;
   padding: 10px 20px;
   font-size: 1em;
   font-weight: 400;
@@ -127,24 +155,27 @@ const Button = styled(motion.button)`
 `;
 
 const FeatureCard = styled(motion.div)`
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.05);
   padding: 2rem;
   margin: 1rem;
   border-radius: 10px;
-  color: #F3E8FF;
+  color: #FFF;
   transition: transform 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 
   &:hover {
     transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) scale(1.05);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
   }
 
   h3 {
     font-size: 1.5em;
     margin-bottom: 1rem;
+    color: #FFF;
   }
   p {
     font-size: 1em;
+    color: #BBB;
   }
 `;
 
@@ -164,11 +195,12 @@ const HomeComponent: React.FC = () => {
   useTilt(cardRef);
 
   return (
+    <div className={`${orbitron.variable} font-sans`}>
     <StyledContainer>
       <StyledNavbar>
         <Logo>
           <Rocket className="inline-block mr-2" />
-          Ignis
+          IGNIS
         </Logo>
         <motion.div 
           className="nav-links"
@@ -177,13 +209,13 @@ const HomeComponent: React.FC = () => {
           transition={{ delay: 0.2 }}
         >
           <NavItem>
-            <a href="/launch"><Coins className="inline-block mr-1" />Launch</a>
+            <a href="/launch"><Coins className="inline-block mr-1" />LAUNCH</a>
           </NavItem>
           <NavItem>
-            <a href="/swap"><Gem className="inline-block mr-1" />Swap</a>
+            <a href="/swap"><Gem className="inline-block mr-1" />SWAP</a>
           </NavItem>
           <NavItem>
-            <a href="/portfolio"><BarChart3 className="inline-block mr-1" />Portfolio</a>
+            <a href="/portfolio"><BarChart3 className="inline-block mr-1" />PORTFOLIO</a>
           </NavItem>
         </motion.div>
         <motion.button 
@@ -191,20 +223,20 @@ const HomeComponent: React.FC = () => {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           whileTap={{ scale: 0.9 }}
         >
-          {isMenuOpen ? <X /> : <Menu />}
+          {isMenuOpen ? <X color="#FFF" /> : <Menu color="#FFF" />}
         </motion.button>
         <motion.div 
           className={`mobile-nav ${isMenuOpen ? 'active' : ''}`}
           onClick={() => setIsMenuOpen(false)}
         >
           <NavItem>
-            <a href="/launch"><Coins className="inline-block mr-1" />Launch</a>
+            <a href="/launch"><Coins className="inline-block mr-1" />LAUNCH</a>
           </NavItem>
           <NavItem>
-            <a href="/swap"><Gem className="inline-block mr-1" />Swap</a>
+            <a href="/swap"><Gem className="inline-block mr-1" />SWAP</a>
           </NavItem>
           <NavItem>
-            <a href="/portfolio"><BarChart3 className="inline-block mr-1" />Portfolio</a>
+            <a href="/portfolio"><BarChart3 className="inline-block mr-1" />PORTFOLIO</a>
           </NavItem>
         </motion.div>
         <motion.button 
@@ -212,7 +244,7 @@ const HomeComponent: React.FC = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Wallet className="inline-block mr-1" />Connect Wallet
+          <Wallet className="inline-block mr-1" />CONNECT WALLET
         </motion.button>
       </StyledNavbar>
 
@@ -220,16 +252,16 @@ const HomeComponent: React.FC = () => {
         <motion.h1 
           initial={{ opacity: 0, y: -100 }}
           animate={controls}
-          className="text-8xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-500"
+          className="text-8xl font-bold mb-4"
         >
-          Ignis
+          IGNIS
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0, x: -100 }}
           animate={controls}
           className="text-2xl mb-8"
         >
-          Your gateway to the universe of tokens and NFTs.
+          YOUR GATEWAY TO THE UNIVERSE OF TOKENS AND NFTs
         </motion.p>
         <motion.div 
           className="cta-buttons flex flex-col md:flex-row gap-4 mt-4"
@@ -237,8 +269,8 @@ const HomeComponent: React.FC = () => {
           animate={controls}
           transition={{ delay: 0.5 }}
         >
-          <Button><Coins className="inline-block mr-2" />Start Creating</Button>
-          <Button><Gem className="inline-block mr-2" />Explore Tokens</Button>
+          <Button><Coins className="inline-block mr-2" />START CREATING</Button>
+          <Button><Gem className="inline-block mr-2" />EXPLORE TOKENS</Button>
         </motion.div>
 
         <motion.div 
@@ -248,24 +280,292 @@ const HomeComponent: React.FC = () => {
           transition={{ delay: 1, staggerChildren: 0.2 }}
         >
           <FeatureCard ref={cardRef}>
-            <h3><Coins /> Token Creation</h3>
-            <p>Launch your token in minutes</p>
+            <h3><Coins />TOKEN CREATION</h3>
+            <p>LAUNCH YOUR TOKEN IN MINUTES</p>
           </FeatureCard>
           <FeatureCard>
-            <h3><Gem /> NFT Marketplace</h3>
-            <p>Trade unique digital assets</p>
+            <h3><Gem />NFT MARKETPLACE</h3>
+            <p>TRADE UNIQUE DIGITAL ASSETS</p>
           </FeatureCard>
           <FeatureCard>
-            <h3><BarChart3 /> Portfolio Tracking</h3>
-            <p>Monitor your investments</p>
+            <h3><BarChart3 />PORTFOLIO TRACKING</h3>
+            <p>MONITOR YOUR INVESTMENTS</p>
           </FeatureCard>
         </motion.div>
       </main>
     </StyledContainer>
+    </div>
   );
 };
 
 export default HomeComponent;
+
+// import React, { useEffect, useState, useRef } from 'react';
+// import styled from 'styled-components';
+// import { motion, useAnimation } from 'framer-motion';
+// import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
+
+// // Custom hook for 3D tilt effect
+// const useTilt = (ref: React.RefObject<HTMLDivElement | null>) => {
+//   useEffect(() => {
+//     const handleMouseMove = (e: MouseEvent) => {
+//       const el = ref.current;
+//       if (el) {
+//         const { offsetWidth: width, offsetHeight: height } = el;
+//         const { clientX, clientY } = e;
+//         const x = (clientX - el.offsetLeft) / width - 0.5;
+//         const y = (clientY - el.offsetTop) / height - 0.5;
+//         el.style.transform = `perspective(1000px) rotateX(${-y * 20}deg) rotateY(${x * 20}deg) scale3d(1, 1, 1)`;
+//       }
+//     };
+//     const refCurrent = ref.current;
+//     refCurrent?.addEventListener('mousemove', handleMouseMove);
+
+//     return () => {
+//       refCurrent?.removeEventListener('mousemove', handleMouseMove);
+//     };
+//   }, [ref]);
+// };
+
+// // Styled Components
+// const StyledContainer = styled.div`
+//   background: linear-gradient(to bottom, #000000, #1a1040);
+//   color: #FFFFFF;
+//   min-height: 100vh;
+//   font-family: 'Roboto', sans-serif;
+//   display: flex;
+//   flex-direction: column;
+//   position: relative;
+//   overflow: hidden;
+// `;
+
+// const StyledNavbar = styled.nav`
+//   position: sticky;
+//   top: 0;
+//   background: rgba(0, 0, 0, 0.5);
+//   backdrop-filter: blur(20px);
+//   z-index: 1000;
+//   padding: 1rem 2rem;
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   transition: all 0.3s ease;
+
+//   .nav-links {
+//     display: flex;
+//     gap: 2rem;
+
+//     @media (max-width: 768px) {
+//       display: none;
+//     }
+//   }
+
+//   .mobile-nav {
+//     position: fixed;
+//     top: 0;
+//     left: 0;
+//     width: 100%;
+//     height: 100%;
+//     background: rgba(25, 25, 25, 0.95);
+//     display: flex;
+//     flex-direction: column;
+//     align-items: center;
+//     justify-content: center;
+//     transform: translateY(-100%);
+//     transition: transform 0.5s ease;
+
+//     &.active {
+//       transform: translateY(0);
+//     }
+//   }
+// `;
+
+// const NavItem = styled(motion.li)`
+//   list-style: none;
+//   a {
+//     color: #F3E8FF;
+//     text-decoration: none;
+//     font-weight: 500;
+//     padding: 0.5rem 1rem;
+//     transition: color 0.2s ease, transform 0.2s ease;
+
+//     &:hover {
+//       color: #c9a7eb;
+//       transform: translateY(-2px);
+//     }
+//   }
+// `;
+
+// const Logo = styled.h1`
+//   font-size: 2.5em;
+//   font-weight: 700;
+//   background: linear-gradient(to right, #8A2387, #E94057);
+//   -webkit-background-clip: text;
+//   -webkit-text-fill-color: transparent;
+//   cursor: pointer;
+//   transition: transform 0.3s ease;
+
+//   &:hover {
+//     transform: scale(1.1);
+//   }
+// `;
+
+// const Button = styled(motion.button)`
+//   background: transparent;
+//   border: 2px solid #F3E8FF;
+//   color: #F3E8FF;
+//   padding: 10px 20px;
+//   font-size: 1em;
+//   font-weight: 400;
+//   cursor: pointer;
+//   transition: all 0.3s ease;
+
+//   &:hover {
+//     transform: scale(1.05);
+//     box-shadow: 0 0 20px rgba(255,255,255,0.3);
+//   }
+// `;
+
+// const FeatureCard = styled(motion.div)`
+//   background: rgba(0, 0, 0, 0.4);
+//   padding: 2rem;
+//   margin: 1rem;
+//   border-radius: 10px;
+//   color: #F3E8FF;
+//   transition: transform 0.3s ease;
+
+//   &:hover {
+//     transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) scale(1.05);
+//     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+//   }
+
+//   h3 {
+//     font-size: 1.5em;
+//     margin-bottom: 1rem;
+//   }
+//   p {
+//     font-size: 1em;
+//   }
+// `;
+
+// const HomeComponent: React.FC = () => {
+//   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+//   const controls = useAnimation();
+//   const cardRef = useRef<HTMLDivElement>(null);
+
+//   useEffect(() => {
+//     controls.start({
+//       opacity: [0, 1],
+//       y: [100, 0],
+//       transition: { duration: 1, ease: "easeOut" }
+//     });
+//   }, [controls]);
+
+//   useTilt(cardRef);
+
+//   return (
+//     <StyledContainer>
+//       <StyledNavbar>
+//         <Logo>
+//           <Rocket className="inline-block mr-2" />
+//           Ignis
+//         </Logo>
+//         <motion.div 
+//           className="nav-links"
+//           initial={{ y: -20, opacity: 0 }}
+//           animate={{ y: 0, opacity: 1 }}
+//           transition={{ delay: 0.2 }}
+//         >
+//           <NavItem>
+//             <a href="/launch"><Coins className="inline-block mr-1" />Launch</a>
+//           </NavItem>
+//           <NavItem>
+//             <a href="/swap"><Gem className="inline-block mr-1" />Swap</a>
+//           </NavItem>
+//           <NavItem>
+//             <a href="/portfolio"><BarChart3 className="inline-block mr-1" />Portfolio</a>
+//           </NavItem>
+//         </motion.div>
+//         <motion.button 
+//           className="md:hidden"
+//           onClick={() => setIsMenuOpen(!isMenuOpen)}
+//           whileTap={{ scale: 0.9 }}
+//         >
+//           {isMenuOpen ? <X /> : <Menu />}
+//         </motion.button>
+//         <motion.div 
+//           className={`mobile-nav ${isMenuOpen ? 'active' : ''}`}
+//           onClick={() => setIsMenuOpen(false)}
+//         >
+//           <NavItem>
+//             <a href="/launch"><Coins className="inline-block mr-1" />Launch</a>
+//           </NavItem>
+//           <NavItem>
+//             <a href="/swap"><Gem className="inline-block mr-1" />Swap</a>
+//           </NavItem>
+//           <NavItem>
+//             <a href="/portfolio"><BarChart3 className="inline-block mr-1" />Portfolio</a>
+//           </NavItem>
+//         </motion.div>
+//         <motion.button 
+//           className="hidden md:block"
+//           whileHover={{ scale: 1.05 }}
+//           whileTap={{ scale: 0.95 }}
+//         >
+//           <Wallet className="inline-block mr-1" />Connect Wallet
+//         </motion.button>
+//       </StyledNavbar>
+
+//       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+//         <motion.h1 
+//           initial={{ opacity: 0, y: -100 }}
+//           animate={controls}
+//           className="text-8xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-500"
+//         >
+//           Ignis
+//         </motion.h1>
+//         <motion.p 
+//           initial={{ opacity: 0, x: -100 }}
+//           animate={controls}
+//           className="text-2xl mb-8"
+//         >
+//           Your gateway to the universe of tokens and NFTs.
+//         </motion.p>
+//         <motion.div 
+//           className="cta-buttons flex flex-col md:flex-row gap-4 mt-4"
+//           initial={{ opacity: 0, scale: 0.5 }}
+//           animate={controls}
+//           transition={{ delay: 0.5 }}
+//         >
+//           <Button><Coins className="inline-block mr-2" />Start Creating</Button>
+//           <Button><Gem className="inline-block mr-2" />Explore Tokens</Button>
+//         </motion.div>
+
+//         <motion.div 
+//           className="features grid grid-cols-1 md:grid-cols-3 gap-4 mt-10"
+//           initial={{ opacity: 0 }}
+//           animate={{ opacity: 1 }}
+//           transition={{ delay: 1, staggerChildren: 0.2 }}
+//         >
+//           <FeatureCard ref={cardRef}>
+//             <h3><Coins /> Token Creation</h3>
+//             <p>Launch your token in minutes</p>
+//           </FeatureCard>
+//           <FeatureCard>
+//             <h3><Gem /> NFT Marketplace</h3>
+//             <p>Trade unique digital assets</p>
+//           </FeatureCard>
+//           <FeatureCard>
+//             <h3><BarChart3 /> Portfolio Tracking</h3>
+//             <p>Monitor your investments</p>
+//           </FeatureCard>
+//         </motion.div>
+//       </main>
+//     </StyledContainer>
+//   );
+// };
+
+// export default HomeComponent;
 
 // import React, { useEffect, useState } from 'react';
 // import styled from 'styled-components';

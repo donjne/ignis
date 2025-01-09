@@ -1,35 +1,14 @@
 "use client";
-// import { useEffect, useState } from 'react';
-// import gsap from 'gsap';
-// import { motion } from 'framer-motion';
-// import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
-
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import gsap from 'gsap';
 import { motion } from 'framer-motion';
 import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
 
-interface AnimatedButtonProps {
-  text: string;
-  icon: React.ComponentType<LucideIconProps>;
-  className?: string;
-}
-
+// Interfaces
 interface NavItemProps {
   icon: React.ComponentType<LucideIconProps>;
   href: string;
   text: string;
-}
-
-interface FeatureCardProps {
-  title: string;
-  icon: React.ComponentType<LucideIconProps>;
-  description: string;
-}
-
-interface NavProps {
-  $isOpen: boolean;
 }
 
 interface LucideIconProps {
@@ -38,371 +17,523 @@ interface LucideIconProps {
 }
 
 // Styled Components
-const StyledContainer = styled.div`
-  background: linear-gradient(to bottom, #000000, #1a1040);
-  color: white;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-
-  .star-bg {
-    position: absolute;
-    inset: 0;
-    background-image: 
-      radial-gradient(1px 1px at 20px 30px, white, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 40px 70px, white, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 50px 160px, white, rgba(0,0,0,0)),
-      radial-gradient(2px 2px at 200px 20px, white, rgba(0,0,0,0));
-    background-size: 200px 200px;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  .nebula {
-    position: absolute;
-    inset: 0;
-    background: 
-      radial-gradient(circle at 50% 50%, rgba(76, 0, 255, 0.1), transparent 60%),
-      radial-gradient(circle at 70% 30%, rgba(255, 0, 255, 0.1), transparent 40%);
-    filter: blur(30px);
-    mix-blend-mode: screen;
-    pointer-events: none;
-  }
-`;
-
 const StyledNavbar = styled.nav`
   position: sticky;
   top: 0;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  background: rgba(25, 25, 25, 0.8); // Darker background for contrast
+  backdrop-filter: blur(15px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 1000;
-  padding: 1rem 2rem;
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 2rem;
+  width: 100%;
 
   @media (max-width: 768px) {
-    padding: 1rem;
-    .connect-wallet {
-      display: none;
-    }
-  }
-
-  .nav-links {
-    display: flex; // Ensure this is always visible on desktop
-    @media (max-width: 768px) {
-      position: fixed;
-      top: 4rem;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.95);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      overflow: hidden;
-      transition: height 0.3s ease, opacity 0.3s ease;
-
-      &.active {
-        height: auto;
-        padding: 1rem;
-      }
-    }
+    padding: 0.5rem 1rem;
   }
 `;
 
-const StyledNavLinks = styled.ul<NavProps>`
-  display: flex; // Always flex for desktop
-  gap: 2rem;
-  margin: 0;
-  padding: 0;
+const StyledNavLinks = styled.ul<{ isOpen: boolean }>`
+  display: flex; // Desktop view
+  gap: 1rem;
   list-style: none;
+  padding: 0;
+  margin: 0;
 
   @media (max-width: 768px) {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(25, 25, 25, 0.9);
+    display: ${({ isOpen }) => (isOpen ? 'flex' : 'none')};
     flex-direction: column;
-    gap: 1rem;
-    display: ${({ $isOpen }) => ($isOpen ? 'flex' : 'none')};
-    
-    li {
-      width: 100%;
-      
-      a {
-        display: flex;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: background-color 0.2s ease;
-        
-        &:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-      }
-    }
+    align-items: center;
+    padding: 1rem 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
 
   li a {
-    color: rgba(255, 255, 255, 0.8);
+    color: #f3e8ff; // Light purple text color
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.2s ease;
-    position: relative;
-    padding: 0.5rem 0;
+    transition: color 0.2s ease;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 
-    &:after {
-      content: '';
-      position: absolute;
+    &:hover {
+      color: #c9a7eb; // Hover color for links
+    }
+
+    @media (max-width: 768px) {
       width: 100%;
-      transform: scaleX(0);
-      height: 2px;
-      bottom: 0;
-      left: 0;
-      background: linear-gradient(to right, #a855f7, #3b82f6);
-      transform-origin: bottom right;
-      transition: transform 0.25s ease-out;
-    }
-
-    &:hover {
-      color: white;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-      
-      &:after {
-        transform: scaleX(1);
-        transform-origin: bottom left;
-      }
+      justify-content: center;
     }
   }
 `;
 
-const StyledFeatures = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
-  padding: 1rem;
-  max-width: 1200px;
-  width: 100%;
-
-  .feature-card {
-    transition: all 0.3s ease;
-    
-    &:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 0 30px rgba(168, 85, 247, 0.2);
-      
-      .icon {
-        transform: scale(1.1);
-        color: #a855f7;
-      }
-    }
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-`;
-
-// Component implementation
-const HomeComponent: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    const animations = [
-      gsap.fromTo('.title', 
-        { opacity: 0, y: -50 }, 
-        { opacity: 1, y: 0, duration: 2, ease: 'power3.out' }
-      ),
-      gsap.fromTo('.description', 
-        { opacity: 0, x: -50 }, 
-        { opacity: 1, x: 0, duration: 2.5, delay: 0.5, ease: 'elastic.out(1, 0.3)' }
-      ),
-      gsap.fromTo('.cta-buttons button', 
-        { opacity: 0, scale: 0.5 }, 
-        { 
-          opacity: 1, 
-          scale: 1, 
-          stagger: 0.3,
-          duration: 1,
-          delay: 1,
-          ease: 'back.out(1.7)'
-        }
-      ),
-      gsap.to('.star-bg', {
-        duration: 20,
-        backgroundPositionX: '+=1000px',
-        repeat: -1,
-        ease: 'none',
-      }),
-      gsap.to('.nebula', {
-        scale: 1.1,
-        opacity: 0.8,
-        duration: 8,
-        yoyo: true,
-        repeat: -1,
-        ease: 'power1.inOut'
-      })
-    ];
-
-    return () => {
-      animations.forEach(animation => animation.kill());
-    };
-  }, []);
-
-  const AnimatedButton: React.FC<AnimatedButtonProps> = ({ text, icon: Icon, className }) => (
-    <motion.button 
-      className={`${className} flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg shadow-purple-500/20 backdrop-blur-sm`}
-      whileHover={{ 
-        scale: 1.05,
-        boxShadow: '0 0 20px rgba(168,85,247,0.5)'
-      }}
-      whileTap={{ scale: 0.95 }}
-    >
+const NavItem: React.FC<NavItemProps> = ({ icon: Icon, href, text }) => (
+  <motion.li
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    <a href={href}>
       <Icon className="w-5 h-5" />
       {text}
-    </motion.button>
-  );
+    </a>
+  </motion.li>
+);
 
-  const NavItem: React.FC<NavItemProps> = ({ icon: Icon, href, text }) => (
-    <motion.li
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <a href={href} className="flex items-center gap-2">
-        <Icon className="w-4 h-4" />
-        {text}
-      </a>
-    </motion.li>
-  );
-
-  const FeatureCard: React.FC<FeatureCardProps> = ({ title, icon: Icon, description }) => (
-    <motion.div
-      className="feature-card backdrop-blur-md bg-white/5 rounded-xl p-6 border border-white/10"
-      whileHover={{ 
-        scale: 1.05,
-        backgroundColor: 'rgba(255,255,255,0.1)'
-      }}
-    >
-      <Icon className="w-8 h-8 mb-4 text-purple-400" />
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-purple-100">{description}</p>
-    </motion.div>
-  );
+const ResponsiveNavbar: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
 
   return (
-    <StyledContainer>
-      <div className="nebula" />
-      
-      <StyledNavbar>
-        <motion.h2 
-          className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 cursor-pointer"
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 1, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-        >
-          <Rocket className="inline-block mr-2" />
-          Ignis
-        </motion.h2>
+    <StyledNavbar>
+      <motion.h2 
+        className="text-xl md:text-2xl font-bold text-gradient bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 1, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+      >
+        <Rocket className="inline-block mr-2" />
+        Ignis
+      </motion.h2>
 
-        <motion.button
-          className="md:hidden z-50 p-2 bg-white/10 rounded-lg backdrop-blur-sm"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isMenuOpen ? <X /> : <Menu />}
-        </motion.button>
+      <motion.button
+        className="p-2 ml-auto md:hidden bg-white/10 rounded-full text-white"
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isMenuOpen ? <X /> : <Menu />}
+      </motion.button>
 
-        <motion.div 
-          className={`nav-links ${isMenuOpen ? 'active' : ''}`}
-          initial={false}
-          animate={{
-            height: isMenuOpen ? 'auto' : 0,
-            opacity: isMenuOpen ? 1 : 0
-          }}
-        >
-          <StyledNavLinks $isOpen={isMenuOpen}>
-            <NavItem icon={Coins} href="/launch" text="Launch" />
-            <NavItem icon={Gem} href="/swap" text="Swap" />
-            <NavItem icon={BarChart3} href="/portfolio" text="Portfolio" />
-          </StyledNavLinks>
-        </motion.div>
+      <StyledNavLinks isOpen={isMenuOpen}>
+        <NavItem icon={Coins} href="/launch" text="Launch" />
+        <NavItem icon={Gem} href="/swap" text="Swap" />
+        <NavItem icon={BarChart3} href="/portfolio" text="Portfolio" />
+      </StyledNavLinks>
 
-        <motion.button 
-          className="connect-wallet hidden md:flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-2 px-4 rounded-full hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Wallet className="w-4 h-4" />
-          Connect Wallet
-        </motion.button>
-      </StyledNavbar>
-
-      <main className="relative flex-grow flex flex-col items-center justify-center text-center px-4">
-        <div className="star-bg" />
-        
-        <motion.h1 
-          className="title text-7xl sm:text-9xl font-extrabold mb-4 z-10 font-sans text-transparent bg-clip-text bg-gradient-to-br from-white via-purple-400 to-blue-500"
-          animate={{ 
-            scale: [1, 1.05, 1],
-            textShadow: [
-              "0 0 20px rgba(168,85,247,0.5)",
-              "0 0 60px rgba(168,85,247,0.2)",
-              "0 0 20px rgba(168,85,247,0.5)"
-            ]
-          }}
-          transition={{ 
-            duration: 3, 
-            repeat: Infinity, 
-            repeatType: "reverse",
-            ease: "easeInOut"
-          }}
-        >
-          Ignis
-        </motion.h1>
-
-        <motion.p 
-          className="description text-xl sm:text-2xl mb-8 z-10 font-sans text-purple-100"
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-        >
-          Your gateway to the universe of tokens and NFTs.
-        </motion.p>
-
-        <div className="cta-buttons flex flex-col sm:flex-row gap-4 z-10">
-          <AnimatedButton 
-            text="Start Creating" 
-            icon={Coins}
-            className="w-full sm:w-auto"
-          />
-          <AnimatedButton 
-            text="Explore Tokens" 
-            icon={Gem}
-            className="w-full sm:w-auto"
-          />
-        </div>
-
-        <StyledFeatures>
-          <FeatureCard 
-            title="Token Creation" 
-            icon={Coins}
-            description="Launch your token in minutes"
-          />
-          <FeatureCard 
-            title="NFT Marketplace" 
-            icon={Gem}
-            description="Trade unique digital assets"
-          />
-          <FeatureCard 
-            title="Portfolio Tracking" 
-            icon={BarChart3}
-            description="Monitor your investments"
-          />
-        </StyledFeatures>
-      </main>
-    </StyledContainer>
+      <motion.button 
+        className="hidden md:flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-full hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Wallet className="w-4 h-4" />
+        Connect Wallet
+      </motion.button>
+    </StyledNavbar>
   );
 };
 
-export default HomeComponent;
+export default ResponsiveNavbar;
+
+// import { useEffect, useState } from 'react';
+// import gsap from 'gsap';
+// import { motion } from 'framer-motion';
+// import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
+
+// import React, { useEffect, useState } from 'react';
+// import styled from 'styled-components';
+// import gsap from 'gsap';
+// import { motion } from 'framer-motion';
+// import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
+
+// interface AnimatedButtonProps {
+//   text: string;
+//   icon: React.ComponentType<LucideIconProps>;
+//   className?: string;
+// }
+
+// interface NavItemProps {
+//   icon: React.ComponentType<LucideIconProps>;
+//   href: string;
+//   text: string;
+// }
+
+// interface FeatureCardProps {
+//   title: string;
+//   icon: React.ComponentType<LucideIconProps>;
+//   description: string;
+// }
+
+// interface NavProps {
+//   $isOpen: boolean;
+// }
+
+// interface LucideIconProps {
+//   className?: string;
+//   size?: number | string;
+// }
+
+// // Styled Components
+// const StyledContainer = styled.div`
+//   background: linear-gradient(to bottom, #000000, #1a1040);
+//   color: white;
+//   min-height: 100vh;
+//   display: flex;
+//   flex-direction: column;
+//   position: relative;
+//   overflow: hidden;
+
+//   .star-bg {
+//     position: absolute;
+//     inset: 0;
+//     background-image: 
+//       radial-gradient(1px 1px at 20px 30px, white, rgba(0,0,0,0)),
+//       radial-gradient(1px 1px at 40px 70px, white, rgba(0,0,0,0)),
+//       radial-gradient(1px 1px at 50px 160px, white, rgba(0,0,0,0)),
+//       radial-gradient(2px 2px at 200px 20px, white, rgba(0,0,0,0));
+//     background-size: 200px 200px;
+//     opacity: 0.5;
+//     pointer-events: none;
+//   }
+
+//   .nebula {
+//     position: absolute;
+//     inset: 0;
+//     background: 
+//       radial-gradient(circle at 50% 50%, rgba(76, 0, 255, 0.1), transparent 60%),
+//       radial-gradient(circle at 70% 30%, rgba(255, 0, 255, 0.1), transparent 40%);
+//     filter: blur(30px);
+//     mix-blend-mode: screen;
+//     pointer-events: none;
+//   }
+// `;
+
+// const StyledNavbar = styled.nav`
+//   position: sticky;
+//   top: 0;
+//   background: rgba(0, 0, 0, 0.2);
+//   backdrop-filter: blur(10px);
+//   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+//   z-index: 1000;
+//   padding: 1rem 2rem;
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   gap: 2rem;
+
+//   @media (max-width: 768px) {
+//     padding: 1rem;
+//     .connect-wallet {
+//       display: none;
+//     }
+//   }
+
+//   .nav-links {
+//     display: flex; // Ensure this is always visible on desktop
+//     @media (max-width: 768px) {
+//       position: fixed;
+//       top: 4rem;
+//       left: 0;
+//       right: 0;
+//       background: rgba(0, 0, 0, 0.95);
+//       backdrop-filter: blur(20px);
+//       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+//       overflow: hidden;
+//       transition: height 0.3s ease, opacity 0.3s ease;
+
+//       &.active {
+//         height: auto;
+//         padding: 1rem;
+//       }
+//     }
+//   }
+// `;
+
+// const StyledNavLinks = styled.ul<NavProps>`
+//   display: flex; // Always flex for desktop
+//   gap: 2rem;
+//   margin: 0;
+//   padding: 0;
+//   list-style: none;
+
+//   @media (max-width: 768px) {
+//     flex-direction: column;
+//     gap: 1rem;
+//     display: ${({ $isOpen }) => ($isOpen ? 'flex' : 'none')};
+    
+//     li {
+//       width: 100%;
+      
+//       a {
+//         display: flex;
+//         padding: 0.5rem 1rem;
+//         border-radius: 0.5rem;
+//         transition: background-color 0.2s ease;
+        
+//         &:hover {
+//           background: rgba(255, 255, 255, 0.1);
+//         }
+//       }
+//     }
+//   }
+
+//   li a {
+//     color: rgba(255, 255, 255, 0.8);
+//     text-decoration: none;
+//     font-weight: 500;
+//     transition: all 0.2s ease;
+//     position: relative;
+//     padding: 0.5rem 0;
+
+//     &:after {
+//       content: '';
+//       position: absolute;
+//       width: 100%;
+//       transform: scaleX(0);
+//       height: 2px;
+//       bottom: 0;
+//       left: 0;
+//       background: linear-gradient(to right, #a855f7, #3b82f6);
+//       transform-origin: bottom right;
+//       transition: transform 0.25s ease-out;
+//     }
+
+//     &:hover {
+//       color: white;
+//       text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      
+//       &:after {
+//         transform: scaleX(1);
+//         transform-origin: bottom left;
+//       }
+//     }
+//   }
+// `;
+
+// const StyledFeatures = styled.div`
+//   display: grid;
+//   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+//   gap: 2rem;
+//   margin-top: 3rem;
+//   padding: 1rem;
+//   max-width: 1200px;
+//   width: 100%;
+
+//   .feature-card {
+//     transition: all 0.3s ease;
+    
+//     &:hover {
+//       transform: translateY(-5px);
+//       box-shadow: 0 0 30px rgba(168, 85, 247, 0.2);
+      
+//       .icon {
+//         transform: scale(1.1);
+//         color: #a855f7;
+//       }
+//     }
+//   }
+
+//   @media (max-width: 768px) {
+//     grid-template-columns: 1fr;
+//     gap: 1rem;
+//   }
+// `;
+
+// // Component implementation
+// const HomeComponent: React.FC = () => {
+//   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+
+//   useEffect(() => {
+//     const animations = [
+//       gsap.fromTo('.title', 
+//         { opacity: 0, y: -50 }, 
+//         { opacity: 1, y: 0, duration: 2, ease: 'power3.out' }
+//       ),
+//       gsap.fromTo('.description', 
+//         { opacity: 0, x: -50 }, 
+//         { opacity: 1, x: 0, duration: 2.5, delay: 0.5, ease: 'elastic.out(1, 0.3)' }
+//       ),
+//       gsap.fromTo('.cta-buttons button', 
+//         { opacity: 0, scale: 0.5 }, 
+//         { 
+//           opacity: 1, 
+//           scale: 1, 
+//           stagger: 0.3,
+//           duration: 1,
+//           delay: 1,
+//           ease: 'back.out(1.7)'
+//         }
+//       ),
+//       gsap.to('.star-bg', {
+//         duration: 20,
+//         backgroundPositionX: '+=1000px',
+//         repeat: -1,
+//         ease: 'none',
+//       }),
+//       gsap.to('.nebula', {
+//         scale: 1.1,
+//         opacity: 0.8,
+//         duration: 8,
+//         yoyo: true,
+//         repeat: -1,
+//         ease: 'power1.inOut'
+//       })
+//     ];
+
+//     return () => {
+//       animations.forEach(animation => animation.kill());
+//     };
+//   }, []);
+
+//   const AnimatedButton: React.FC<AnimatedButtonProps> = ({ text, icon: Icon, className }) => (
+//     <motion.button 
+//       className={`${className} flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg shadow-purple-500/20 backdrop-blur-sm`}
+//       whileHover={{ 
+//         scale: 1.05,
+//         boxShadow: '0 0 20px rgba(168,85,247,0.5)'
+//       }}
+//       whileTap={{ scale: 0.95 }}
+//     >
+//       <Icon className="w-5 h-5" />
+//       {text}
+//     </motion.button>
+//   );
+
+//   const NavItem: React.FC<NavItemProps> = ({ icon: Icon, href, text }) => (
+//     <motion.li
+//       whileHover={{ scale: 1.05 }}
+//       whileTap={{ scale: 0.95 }}
+//     >
+//       <a href={href} className="flex items-center gap-2">
+//         <Icon className="w-4 h-4" />
+//         {text}
+//       </a>
+//     </motion.li>
+//   );
+
+//   const FeatureCard: React.FC<FeatureCardProps> = ({ title, icon: Icon, description }) => (
+//     <motion.div
+//       className="feature-card backdrop-blur-md bg-white/5 rounded-xl p-6 border border-white/10"
+//       whileHover={{ 
+//         scale: 1.05,
+//         backgroundColor: 'rgba(255,255,255,0.1)'
+//       }}
+//     >
+//       <Icon className="w-8 h-8 mb-4 text-purple-400" />
+//       <h3 className="text-xl font-bold mb-2">{title}</h3>
+//       <p className="text-purple-100">{description}</p>
+//     </motion.div>
+//   );
+
+//   return (
+//     <StyledContainer>
+//       <div className="nebula" />
+      
+//       <StyledNavbar>
+//         <motion.h2 
+//           className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 cursor-pointer"
+//           animate={{ scale: [1, 1.05, 1] }}
+//           transition={{ duration: 1, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+//         >
+//           <Rocket className="inline-block mr-2" />
+//           Ignis
+//         </motion.h2>
+
+//         <motion.button
+//           className="md:hidden z-50 p-2 bg-white/10 rounded-lg backdrop-blur-sm"
+//           onClick={() => setIsMenuOpen(!isMenuOpen)}
+//           whileTap={{ scale: 0.95 }}
+//         >
+//           {isMenuOpen ? <X /> : <Menu />}
+//         </motion.button>
+
+//         <motion.div 
+//           className={`nav-links ${isMenuOpen ? 'active' : ''}`}
+//           initial={false}
+//           animate={{
+//             height: isMenuOpen ? 'auto' : 0,
+//             opacity: isMenuOpen ? 1 : 0
+//           }}
+//         >
+//           <StyledNavLinks $isOpen={isMenuOpen}>
+//             <NavItem icon={Coins} href="/launch" text="Launch" />
+//             <NavItem icon={Gem} href="/swap" text="Swap" />
+//             <NavItem icon={BarChart3} href="/portfolio" text="Portfolio" />
+//           </StyledNavLinks>
+//         </motion.div>
+
+//         <motion.button 
+//           className="connect-wallet hidden md:flex items-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-2 px-4 rounded-full hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300"
+//           whileHover={{ scale: 1.05 }}
+//           whileTap={{ scale: 0.95 }}
+//         >
+//           <Wallet className="w-4 h-4" />
+//           Connect Wallet
+//         </motion.button>
+//       </StyledNavbar>
+
+//       <main className="relative flex-grow flex flex-col items-center justify-center text-center px-4">
+//         <div className="star-bg" />
+        
+//         <motion.h1 
+//           className="title text-7xl sm:text-9xl font-extrabold mb-4 z-10 font-sans text-transparent bg-clip-text bg-gradient-to-br from-white via-purple-400 to-blue-500"
+//           animate={{ 
+//             scale: [1, 1.05, 1],
+//             textShadow: [
+//               "0 0 20px rgba(168,85,247,0.5)",
+//               "0 0 60px rgba(168,85,247,0.2)",
+//               "0 0 20px rgba(168,85,247,0.5)"
+//             ]
+//           }}
+//           transition={{ 
+//             duration: 3, 
+//             repeat: Infinity, 
+//             repeatType: "reverse",
+//             ease: "easeInOut"
+//           }}
+//         >
+//           Ignis
+//         </motion.h1>
+
+//         <motion.p 
+//           className="description text-xl sm:text-2xl mb-8 z-10 font-sans text-purple-100"
+//           animate={{ scale: [1, 1.02, 1] }}
+//           transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+//         >
+//           Your gateway to the universe of tokens and NFTs.
+//         </motion.p>
+
+//         <div className="cta-buttons flex flex-col sm:flex-row gap-4 z-10">
+//           <AnimatedButton 
+//             text="Start Creating" 
+//             icon={Coins}
+//             className="w-full sm:w-auto"
+//           />
+//           <AnimatedButton 
+//             text="Explore Tokens" 
+//             icon={Gem}
+//             className="w-full sm:w-auto"
+//           />
+//         </div>
+
+//         <StyledFeatures>
+//           <FeatureCard 
+//             title="Token Creation" 
+//             icon={Coins}
+//             description="Launch your token in minutes"
+//           />
+//           <FeatureCard 
+//             title="NFT Marketplace" 
+//             icon={Gem}
+//             description="Trade unique digital assets"
+//           />
+//           <FeatureCard 
+//             title="Portfolio Tracking" 
+//             icon={BarChart3}
+//             description="Monitor your investments"
+//           />
+//         </StyledFeatures>
+//       </main>
+//     </StyledContainer>
+//   );
+// };
+
+// export default HomeComponent;
 
 // const HomeComponent = () => {
 //   const [isMenuOpen, setIsMenuOpen] = useState(false);

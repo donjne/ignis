@@ -351,12 +351,13 @@ import {
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { createCollection, create, fetchCollection } from '@metaplex-foundation/mpl-core';
-import { createMetadataAccountV3 } from '@metaplex-foundation/mpl-token-metadata';
-import { keypairIdentity, generateSigner, publicKey as toPublicKey } from '@metaplex-foundation/umi';
+import { createCollection, create, fetchCollection, mplCore } from '@metaplex-foundation/mpl-core';
+import { createMetadataAccountV3, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import { generateSigner, Signer, publicKey as toPublicKey, UmiPlugin, signerIdentity } from '@metaplex-foundation/umi';
 import WalletButton from '@/components/landing/WalletButton';
-import { web3JsEddsa } from '@metaplex-foundation/umi-eddsa-web3js';
 import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { WalletAdapter } from '@solana/wallet-adapter-base';
+import { WalletContextState } from '@solana/wallet-adapter-react';
 
 // Types
 interface FormData {
@@ -376,8 +377,7 @@ interface CreationResult {
 }
 
 const LaunchPage: React.FC = () => {
-  // State
-  const { publicKey, connected, wallet } = useWallet();
+  const { publicKey, connected, wallet } = useWallet() as WalletContextState;
   const { setVisible } = useWalletModal();
   const [step, setStep] = useState<number>(1);
   const [assetType, setAssetType] = useState<'token' | 'nft' | 'collection' | ''>('');
@@ -392,18 +392,23 @@ const LaunchPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [creationResult, setCreationResult] = useState<CreationResult | null>(null);
-
-
   
-  const initializeUmi = async () => {
+  const initializeUmi = async (): Promise<any> => {
     try {
-      const umi = createUmi('https://api.devnet.solana.com');
+      const umi = createUmi('https://api.devnet.solana.com')
+        .use(mplTokenMetadata())
+        .use(mplCore());
+  
+      if (!publicKey || !wallet) {
+        throw new Error('Wallet not connected');
+      }
+  
+      // Create signer from wallet adapter
+      const signer = createSignerFromWalletAdapter(wallet as unknown as WalletAdapter);
       
-      if (!publicKey || !wallet) throw new Error('Wallet not connected');
-      
-      const signer = createSignerFromWallet(wallet);
-      umi.use(signer);
-      
+      // Use the signerIdentity plugin with the signer
+      umi.use(signerIdentity(signer, true));
+  
       return umi;
     } catch (error) {
       console.error('Error initializing Umi:', error);
@@ -909,3 +914,8 @@ const LaunchPage: React.FC = () => {
 };
 
 export default LaunchPage;
+
+// First Call of the Year - what to expect
+// welcome everybody, give everyone a chance to speak
+// Talk about the 30 days bootcamp and get progress feedback
+// Dive into explaining our core focus this year.

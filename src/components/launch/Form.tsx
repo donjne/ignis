@@ -354,8 +354,9 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { createCollection, create, fetchCollection } from '@metaplex-foundation/mpl-core';
 import { createMetadataAccountV3 } from '@metaplex-foundation/mpl-token-metadata';
 import { keypairIdentity, generateSigner, publicKey as toPublicKey } from '@metaplex-foundation/umi';
-import { web3JsEddsa } from '@metaplex-foundation/umi-eddsa-web3js';
 import WalletButton from '@/components/landing/WalletButton';
+import { web3JsEddsa } from '@metaplex-foundation/umi-eddsa-web3js';
+import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
 
 // Types
 interface FormData {
@@ -376,7 +377,7 @@ interface CreationResult {
 
 const LaunchPage: React.FC = () => {
   // State
-  const { publicKey, connected } = useWallet();
+  const { publicKey, connected, wallet } = useWallet();
   const { setVisible } = useWalletModal();
   const [step, setStep] = useState<number>(1);
   const [assetType, setAssetType] = useState<'token' | 'nft' | 'collection' | ''>('');
@@ -392,16 +393,16 @@ const LaunchPage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [creationResult, setCreationResult] = useState<CreationResult | null>(null);
 
+
+  
   const initializeUmi = async () => {
     try {
-      const umi = createUmi('https://api.devnet.solana.com')
-        .use(web3JsEddsa());
+      const umi = createUmi('https://api.devnet.solana.com');
       
-      if (!publicKey) throw new Error('Wallet not connected');
+      if (!publicKey || !wallet) throw new Error('Wallet not connected');
       
-      // Convert Solana PublicKey to Umi PublicKey
-      const umiPublicKey = toPublicKey(publicKey.toBase58());
-      umi.use(keypairIdentity(generateSigner(umi))); // You'll need to handle signing differently
+      const signer = createSignerFromWallet(wallet);
+      umi.use(signer);
       
       return umi;
     } catch (error) {

@@ -25,10 +25,26 @@ interface FeatureCardProps {
 }
 
 const GradientBackground: React.FC = () => (
-  <div className="fixed inset-0 z-0">
+  <div className="fixed inset-0 z-0 overflow-hidden">
     <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-black to-teal-900/20" />
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,0.7),rgba(0,0,0,0.9))]" />
     <div className="grid-animation absolute inset-0 opacity-20" />
+    
+    {/* Animated Fire Effect */}
+    <div className="absolute bottom-0 left-0 right-0 h-full overflow-hidden">
+      <div className="fire-container">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className={`fire-particle fire-${i + 1}`} />
+        ))}
+      </div>
+    </div>
+    
+    {/* Glowing Orbs */}
+    <div className="absolute inset-0">
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className={`floating-orb orb-${i + 1}`} />
+      ))}
+    </div>
   </div>
 );
 
@@ -255,7 +271,89 @@ const HomeComponent: React.FC = () => {
         </div>
       </main>
 
+      {/* Background Animations */}
       <style jsx global>{`
+        .fire-container {
+          position: absolute;
+          bottom: -50%;
+          left: 0;
+          right: 0;
+          height: 200%;
+          transform: scale(2);
+          filter: blur(3px);
+        }
+
+        .fire-particle {
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          filter: blur(10px);
+          animation: rise 3s infinite;
+          opacity: 0;
+        }
+
+        .fire-1 { background: rgba(0, 255, 255, 0.3); animation-delay: 0s; left: 20%; }
+        .fire-2 { background: rgba(0, 200, 255, 0.3); animation-delay: 0.3s; left: 40%; }
+        .fire-3 { background: rgba(0, 255, 230, 0.3); animation-delay: 0.6s; left: 60%; }
+        .fire-4 { background: rgba(0, 230, 255, 0.3); animation-delay: 0.9s; left: 80%; }
+        .fire-5 { background: rgba(0, 210, 255, 0.3); animation-delay: 1.2s; left: 30%; }
+
+        @keyframes rise {
+          0% {
+            transform: translateY(0) scale(1);
+            opacity: 0;
+          }
+          20% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 0.3;
+          }
+          80% {
+            opacity: 0.2;
+          }
+          100% {
+            transform: translateY(-1000px) scale(3);
+            opacity: 0;
+          }
+        }
+
+        .floating-orb {
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          filter: blur(20px);
+          opacity: 0.1;
+          animation: float 10s infinite;
+        }
+
+        .orb-1 { background: rgba(0, 255, 255, 0.2); left: 10%; top: 20%; animation-delay: 0s; }
+        .orb-2 { background: rgba(0, 200, 255, 0.2); left: 80%; top: 50%; animation-delay: 1s; }
+        .orb-3 { background: rgba(0, 255, 230, 0.2); left: 30%; top: 70%; animation-delay: 2s; }
+        .orb-4 { background: rgba(0, 230, 255, 0.2); left: 60%; top: 30%; animation-delay: 3s; }
+        .orb-5 { background: rgba(0, 210, 255, 0.2); left: 20%; top: 40%; animation-delay: 4s; }
+        .orb-6 { background: rgba(0, 255, 240, 0.2); left: 70%; top: 60%; animation-delay: 5s; }
+        .orb-7 { background: rgba(0, 240, 255, 0.2); left: 40%; top: 20%; animation-delay: 6s; }
+        .orb-8 { background: rgba(0, 220, 255, 0.2); left: 90%; top: 80%; animation-delay: 7s; }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          25% {
+            transform: translate(50px, -50px) scale(1.2);
+          }
+          50% {
+            transform: translate(0, -100px) scale(1);
+          }
+          75% {
+            transform: translate(-50px, -50px) scale(0.8);
+          }
+        }
         .grid-animation {
           background-size: 50px 50px;
           background-image: 

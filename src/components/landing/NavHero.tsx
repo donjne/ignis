@@ -1,299 +1,295 @@
 "use client";
 
-"use client";
-
-import React, { useEffect, useState, useRef } from 'react';
-import styled from 'styled-components';
-import { motion, useAnimation } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
-
 import { Orbitron } from 'next/font/google';
 
 const orbitron = Orbitron({
   subsets: ['latin'],
-  weight: ['400', '700'], // Specify the weights you want to use
-  variable: '--font-orbitron', // CSS variable for easy use
+  weight: ['400', '700'],
+  variable: '--font-orbitron',
 });
 
-// Custom hook for 3D tilt effect
-const useTilt = (ref: React.RefObject<HTMLDivElement | null>) => {
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const el = ref.current;
-      if (el) {
-        const { offsetWidth: width, offsetHeight: height } = el;
-        const { clientX, clientY } = e;
-        const x = (clientX - el.offsetLeft) / width - 0.5;
-        const y = (clientY - el.offsetTop) / height - 0.5;
-        el.style.transform = `perspective(1000px) rotateX(${-y * 20}deg) rotateY(${x * 20}deg) scale3d(1, 1, 1)`;
-      }
-    };
-    const refCurrent = ref.current;
-    refCurrent?.addEventListener('mousemove', handleMouseMove);
+interface NavLinkProps {
+  href: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}
 
-    return () => {
-      refCurrent?.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [ref]);
-};
+interface FeatureCardProps {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  delay: number;
+}
 
-// Styled Components
-const StyledContainer = styled.div`
-  background: #000;
-  color: #FFF;
-  min-height: 100vh;
-  font-family: var(--font-orbitron);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
+const GradientBackground: React.FC = () => (
+  <div className="fixed inset-0 z-0">
+    <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-black to-teal-900/20" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,0.7),rgba(0,0,0,0.9))]" />
+    <div className="grid-animation absolute inset-0 opacity-20" />
+  </div>
+);
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1), transparent),
-      linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-    animation: moveBackground 20s ease infinite;
-    z-index: -1;
-  }
+const NavLink: React.FC<NavLinkProps> = ({ href, children, onClick }) => (
+  <motion.a
+    href={href}
+    onClick={onClick}
+    className="relative text-gray-300 hover:text-white transition-colors px-4 py-2 block w-full md:w-auto text-center"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    <span className="relative z-10">{children}</span>
+    <motion.div
+      className="absolute inset-0 bg-white/5 rounded-lg -z-0"
+      initial={{ scale: 0, opacity: 0 }}
+      whileHover={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.2 }}
+    />
+  </motion.a>
+);
 
-  @keyframes moveBackground {
-    0% { transform: translateX(0) translateY(0) rotate(0deg); }
-    100% { transform: translateX(100vw) translateY(100vh) rotate(360deg); }
-  }
-`;
+const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl"
+      >
+        <div className="flex justify-end p-6">
+          <button onClick={onClose} className="text-white">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        <nav className="flex flex-col items-center justify-center h-[80vh] space-y-8">
+          <NavLink href="/launch" onClick={onClose}>
+            <Coins className="inline-block mr-2 h-4 w-4" />
+            LAUNCH
+          </NavLink>
+          <NavLink href="/swap" onClick={onClose}>
+            <Gem className="inline-block mr-2 h-4 w-4" />
+            SWAP
+          </NavLink>
+          <NavLink href="/portfolio" onClick={onClose}>
+            <BarChart3 className="inline-block mr-2 h-4 w-4" />
+            PORTFOLIO
+          </NavLink>
+          <motion.button
+            className="px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium w-48"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Wallet className="inline-block mr-2 h-4 w-4" />
+            CONNECT WALLET
+          </motion.button>
+        </nav>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 
-const StyledNavbar = styled.nav`
-  position: sticky;
-  top: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(20px);
-  z-index: 1000;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s ease;
-
-  .nav-links {
-    display: flex;
-    gap: 2rem;
-    font-size: 1.1em;
-
-    @media (max-width: 768px) {
-      display: none;
-    }
-  }
-
-  .mobile-nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transform: translateY(-100%);
-    transition: transform 0.5s ease;
-
-    &.active {
-      transform: translateY(0);
-    }
-  }
-`;
-
-const NavItem = styled(motion.li)`
-  list-style: none;
-  a {
-    color: #FFF;
-    text-decoration: none;
-    font-weight: 700;
-    padding: 0.5rem 1rem;
-    transition: color 0.2s ease, transform 0.2s ease;
-
-    &:hover {
-      color: #888;
-      transform: translateY(-2px);
-    }
-  }
-`;
-
-const Logo = styled.h1`
-  font-size: 2.5em;
-  font-weight: 700;
-  color: #FFF;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-`;
-
-const Button = styled(motion.button)`
-  background: transparent;
-  border: 2px solid #FFF;
-  color: #FFF;
-  padding: 10px 20px;
-  font-size: 1em;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(255,255,255,0.3);
-  }
-`;
-
-const FeatureCard = styled(motion.div)`
-  background: rgba(255, 255, 255, 0.05);
-  padding: 2rem;
-  margin: 1rem;
-  border-radius: 10px;
-  color: #FFF;
-  transition: transform 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-
-  &:hover {
-    transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) scale(1.05);
-    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
-  }
-
-  h3 {
-    font-size: 1.5em;
-    margin-bottom: 1rem;
-    color: #FFF;
-  }
-  p {
-    font-size: 1em;
-    color: #BBB;
-  }
-`;
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon: Icon, title, description, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    viewport={{ once: true }}
+    className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-white/5 to-white/10 p-6 sm:p-8 hover:from-white/10 hover:to-white/20 transition-all duration-300"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <Icon className="h-6 w-6 sm:h-8 sm:w-8 mb-4 text-cyan-400" />
+    <h3 className="text-lg sm:text-xl font-bold mb-2 text-white/90">{title}</h3>
+    <p className="text-sm sm:text-base text-gray-400">{description}</p>
+    <motion.div
+      className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-teal-500"
+      initial={{ width: 0 }}
+      whileInView={{ width: '100%' }}
+      transition={{ duration: 0.8, delay: delay + 0.3 }}
+    />
+  </motion.div>
+);
 
 const HomeComponent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const controls = useAnimation();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    controls.start({
-      opacity: [0, 1],
-      y: [100, 0],
-      transition: { duration: 1, ease: "easeOut" }
-    });
-  }, [controls]);
-
-  useTilt(cardRef);
+  const { scrollYProgress } = useScroll();
+  const headerOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const headerY = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
 
   return (
-    <div className={`${orbitron.variable} font-sans`}>
-    <StyledContainer>
-      <StyledNavbar>
-        <Logo>
-          <Rocket className="inline-block mr-2" />
-          IGNIS
-        </Logo>
-        <motion.div 
-          className="nav-links"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
+    <div className={`${orbitron.variable} font-sans bg-black min-h-screen relative`}>
+      <GradientBackground />
+      
+      {/* Mobile Menu */}
+      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      
+      {/* Navbar */}
+      <header className="fixed top-0 w-full z-40 transition-all duration-300">
+        <motion.nav 
+          className="mx-auto px-4 sm:px-6 py-4 backdrop-blur-xl bg-black/20 border-b border-white/10"
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <NavItem>
-            <a href="/launch"><Coins className="inline-block mr-1" />LAUNCH</a>
-          </NavItem>
-          <NavItem>
-            <a href="/swap"><Gem className="inline-block mr-1" />SWAP</a>
-          </NavItem>
-          <NavItem>
-            <a href="/portfolio"><BarChart3 className="inline-block mr-1" />PORTFOLIO</a>
-          </NavItem>
-        </motion.div>
-        <motion.button 
-          className="md:hidden"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          whileTap={{ scale: 0.9 }}
-        >
-          {isMenuOpen ? <X color="#FFF" /> : <Menu color="#FFF" />}
-        </motion.button>
-        <motion.div 
-          className={`mobile-nav ${isMenuOpen ? 'active' : ''}`}
-          onClick={() => setIsMenuOpen(false)}
-        >
-          <NavItem>
-            <a href="/launch"><Coins className="inline-block mr-1" />LAUNCH</a>
-          </NavItem>
-          <NavItem>
-            <a href="/swap"><Gem className="inline-block mr-1" />SWAP</a>
-          </NavItem>
-          <NavItem>
-            <a href="/portfolio"><BarChart3 className="inline-block mr-1" />PORTFOLIO</a>
-          </NavItem>
-        </motion.div>
-        <motion.button 
-          className="hidden md:block"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Wallet className="inline-block mr-1" />CONNECT WALLET
-        </motion.button>
-      </StyledNavbar>
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <motion.div 
+              className="flex items-center space-x-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Rocket className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
+              <span className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400">
+                IGNIS
+              </span>
+            </motion.div>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <motion.h1 
-          initial={{ opacity: 0, y: -100 }}
-          animate={controls}
-          className="text-8xl font-bold mb-4"
-        >
-          IGNIS
-        </motion.h1>
-        <motion.p 
-          initial={{ opacity: 0, x: -100 }}
-          animate={controls}
-          className="text-2xl mb-8"
-        >
-          YOUR GATEWAY TO THE UNIVERSE OF TOKENS AND NFTs
-        </motion.p>
-        <motion.div 
-          className="cta-buttons flex flex-col md:flex-row gap-4 mt-4"
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={controls}
-          transition={{ delay: 0.5 }}
-        >
-          <Button><Coins className="inline-block mr-2" />START CREATING</Button>
-          <Button><Gem className="inline-block mr-2" />EXPLORE TOKENS</Button>
-        </motion.div>
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden text-white p-2"
+              onClick={() => setIsMenuOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
 
-        <motion.div 
-          className="features grid grid-cols-1 md:grid-cols-3 gap-4 mt-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, staggerChildren: 0.2 }}
-        >
-          <FeatureCard ref={cardRef}>
-            <h3><Coins />TOKEN CREATION</h3>
-            <p>LAUNCH YOUR TOKEN IN MINUTES</p>
-          </FeatureCard>
-          <FeatureCard>
-            <h3><Gem />NFT MARKETPLACE</h3>
-            <p>TRADE UNIQUE DIGITAL ASSETS</p>
-          </FeatureCard>
-          <FeatureCard>
-            <h3><BarChart3 />PORTFOLIO TRACKING</h3>
-            <p>MONITOR YOUR INVESTMENTS</p>
-          </FeatureCard>
-        </motion.div>
+            {/* Desktop navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <NavLink href="/launch">
+                <Coins className="inline-block mr-2 h-4 w-4" />
+                LAUNCH
+              </NavLink>
+              <NavLink href="/swap">
+                <Gem className="inline-block mr-2 h-4 w-4" />
+                SWAP
+              </NavLink>
+              <NavLink href="/portfolio">
+                <BarChart3 className="inline-block mr-2 h-4 w-4" />
+                PORTFOLIO
+              </NavLink>
+              <motion.button
+                className="px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Wallet className="inline-block mr-2 h-4 w-4" />
+                CONNECT WALLET
+              </motion.button>
+            </div>
+          </div>
+        </motion.nav>
+      </header>
+
+      {/* Hero Section */}
+      <main className="relative pt-24 sm:pt-32 pb-16 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.h1 
+              className="text-4xl sm:text-6xl md:text-8xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-400 bg-size-200 animate-gradient"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              IGNITE THE FUTURE
+            </motion.h1>
+            <motion.p 
+              className="text-lg sm:text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto px-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
+              Your gateway to the next generation of digital assets and decentralized finance
+            </motion.p>
+            
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4 justify-center mt-8 sm:mt-12 px-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
+              <motion.button
+                className="px-6 sm:px-8 py-3 sm:py-4 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 text-sm sm:text-base"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Coins className="inline-block mr-2 h-4 w-4" />
+                START CREATING
+              </motion.button>
+              <motion.button
+                className="px-6 sm:px-8 py-3 sm:py-4 rounded-lg border border-white/20 text-white font-medium hover:bg-white/5 transition-all duration-300 text-sm sm:text-base"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Gem className="inline-block mr-2 h-4 w-4" />
+                EXPLORE TOKENS
+              </motion.button>
+            </motion.div>
+          </motion.div>
+
+          {/* Features Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mt-16 sm:mt-24 px-4">
+            <FeatureCard
+              icon={Coins}
+              title="Token Creation"
+              description="Launch your token in minutes with our intuitive platform. Smart contracts made simple."
+              delay={0.2}
+            />
+            <FeatureCard
+              icon={Gem}
+              title="NFT Marketplace"
+              description="Trade unique digital assets in a secure environment. Discover rare collections."
+              delay={0.4}
+            />
+            <FeatureCard
+              icon={BarChart3}
+              title="Portfolio Tracking"
+              description="Monitor your investments with advanced analytics and real-time data."
+              delay={0.6}
+            />
+          </div>
+        </div>
       </main>
-    </StyledContainer>
+
+      <style jsx global>{`
+        .grid-animation {
+          background-size: 50px 50px;
+          background-image: 
+            linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+          animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(50px);
+          }
+        }
+
+        .bg-size-200 {
+          background-size: 200% auto;
+        }
+
+        .animate-gradient {
+          animation: gradientMove 8s linear infinite;
+        }
+
+        @keyframes gradientMove {
+          0% {
+            background-position: 0% center;
+          }
+          100% {
+            background-position: 200% center;
+          }
+        }
+      `}</style>
     </div>
   );
 };

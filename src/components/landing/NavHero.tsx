@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
 import { Orbitron } from 'next/font/google';
+import WalletButton from '@/components/landing/WalletButton'
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -183,14 +184,7 @@ const HomeComponent: React.FC = () => {
                 <BarChart3 className="inline-block mr-2 h-4 w-4" />
                 PORTFOLIO
               </NavLink>
-              <motion.button
-                className="px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Wallet className="inline-block mr-2 h-4 w-4" />
-                CONNECT WALLET
-              </motion.button>
+              <WalletButton />
             </div>
           </div>
         </motion.nav>

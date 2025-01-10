@@ -9,8 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@metaplex-foundation/mpl-core": "^1.1.1",
+    "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
+    "@metaplex-foundation/umi": "^1.0.0",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.0.0",
+    "@metaplex-foundation/umi-eddsa-web3js": "^1.0.0",
     "@react-three/drei": "^9.120.5",
     "@react-three/fiber": "^8.17.10",
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/wallet-adapter-react-ui": "^0.9.35",
+    "@solana/wallet-adapter-wallets": "^0.19.32",
+    "@solana/web3.js": "^1.98.0",
     "framer-motion": "^11.16.0",
     "gsap": "^3.12.5",
     "lucide-react": "^0.469.0",

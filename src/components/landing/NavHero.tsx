@@ -27,6 +27,17 @@ const GradientBackground: React.FC = () => (
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,0.7),rgba(0,0,0,0.9))]" />
     <div className="grid-animation absolute inset-0 opacity-20" />
     
+    {/* New Cyber Fire Effect */}
+    <div className="absolute bottom-0 left-0 right-0 h-full overflow-hidden">
+      <div className="cyber-fire-container">
+        {[...Array(20)].map((_, i) => (
+          <div key={i} className={`cyber-fire cyber-fire-${i + 1}`} />
+        ))}
+      </div>
+      <div className="cyber-fire-base" />
+    </div>
+    
+    {/* Existing Effects */}
     <div className="absolute bottom-0 left-0 right-0 h-full overflow-hidden">
       <div className="fire-container">
         {[...Array(5)].map((_, i) => (
@@ -116,52 +127,135 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon: Icon, title, descriptio
   </motion.div>
 );
 
-const Footer: React.FC = () => (
-  <footer className="relative z-10 border-t border-white/10 mt-16">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="text-center md:text-left">
+const Footer: React.FC = () => {
+  const footerLinks = [
+    { href: '/launch', label: 'Launch' },
+    { href: '/portfolio', label: 'Portfolio' },
+    { href: '/contact', label: 'Contact' }
+  ];
+
+  const socialLinks = [
+    { href: 'https://github.com', icon: Github, label: 'GitHub' },
+  ];
+
+  return (
+    <footer className="relative z-10 mt-16">
+      <div className="bg-gradient-to-b from-transparent via-black/50 to-black border-t border-white/10">
+        <motion.div 
+          className="max-w-7xl mx-auto px-4 sm:px-6 py-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          {/* Main Footer Content */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
+            {/* Brand Section */}
+            <div className="col-span-1 md:col-span-4 space-y-6">
+              <motion.div 
+                className="flex items-center justify-center md:justify-start space-x-3"
+                whileHover={{ scale: 1.02 }}
+              >
+                <motion.div
+                  whileHover={{ rotate: 180 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Rocket className="h-8 w-8 text-cyan-400" />
+                </motion.div>
+                <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400 font-['Orbitron']">
+                  IGNIS
+                </span>
+              </motion.div>
+              <motion.p 
+                className="text-gray-400 text-sm leading-relaxed max-w-md mx-auto md:mx-0 text-center md:text-left"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+              >
+                Your gateway to the next generation of digital assets and decentralized finance. Building the future of blockchain technology.
+              </motion.p>
+            </div>
+
+            {/* Quick Links Section */}
+            <div className="col-span-1 md:col-span-4 flex flex-col items-center md:items-start space-y-6">
+              <h4 className="text-white text-lg font-['Orbitron'] relative">
+                Quick Links
+                <motion.div 
+                  className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-teal-500"
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '100%' }}
+                  viewport={{ once: true }}
+                />
+              </h4>
+              <div className="flex flex-col items-center md:items-start space-y-4">
+                {footerLinks.map((link) => (
+                  <motion.a
+                    key={link.href}
+                    href={link.href}
+                    className="text-gray-400 hover:text-white transition-colors group relative"
+                    whileHover={{ x: 5 }}
+                  >
+                    <span className="font-['Orbitron']">{link.label}</span>
+                    <motion.span
+                      className="absolute left-0 right-0 bottom-0 h-px bg-gradient-to-r from-cyan-500 to-teal-500"
+                      initial={{ width: 0 }}
+                      whileHover={{ width: '100%' }}
+                    />
+                  </motion.a>
+                ))}
+              </div>
+            </div>
+
+            {/* Connect Section */}
+            <div className="col-span-1 md:col-span-4 flex flex-col items-center md:items-start space-y-6">
+              <h4 className="text-white text-lg font-['Orbitron'] relative">
+                Connect With Us
+                <motion.div 
+                  className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-teal-500"
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '100%' }}
+                  viewport={{ once: true }}
+                />
+              </h4>
+              <div className="flex justify-center md:justify-start space-x-4">
+                {socialLinks.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <motion.a
+                      key={link.href}
+                      href={link.href}
+                      className="text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-full transition-colors"
+                      whileHover={{ 
+                        scale: 1.2, 
+                        rotate: 360,
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                      }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Icon className="h-6 w-6" />
+                    </motion.a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright Section */}
           <motion.div 
-            className="flex items-center justify-center md:justify-start space-x-2 mb-4"
-            whileHover={{ scale: 1.05 }}
+            className="mt-16 pt-8 border-t border-white/10 text-center"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
           >
-            <Rocket className="h-6 w-6 text-cyan-400" />
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400 font-orbitron">
-              IGNIS
-            </span>
+            <p className="text-gray-400 text-sm font-['Orbitron']">
+              © {new Date().getFullYear()} IGNIS. All rights reserved.
+            </p>
           </motion.div>
-          <p className="text-gray-400 text-sm">Your gateway to the next generation of digital assets</p>
-        </div>
-        <div className="text-center">
-          <h4 className="text-white font-bold mb-4 font-orbitron">Quick Links</h4>
-          <div className="space-y-2">
-            <a href="/launch" className="text-gray-400 hover:text-white block">Launch</a>
-            <a href="/portfolio" className="text-gray-400 hover:text-white block">Portfolio</a>
-            <a href="/contact" className="text-gray-400 hover:text-white block">Contact</a>
-          </div>
-        </div>
-        <div className="text-center md:text-right">
-          <h4 className="text-white font-bold mb-4 font-orbitron">Connect With Us</h4>
-          <div className="flex justify-center md:justify-end space-x-4">
-            <motion.a
-              href="https://github.com"
-              className="text-gray-400 hover:text-white"
-              whileHover={{ scale: 1.2, rotate: 360 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Github className="h-6 w-6" />
-            </motion.a>
-          </div>
-        </div>
+        </motion.div>
       </div>
-      <div className="mt-8 pt-8 border-t border-white/10 text-center">
-        <p className="text-gray-400 text-sm">
-          © {new Date().getFullYear()} IGNIS. All rights reserved.
-        </p>
-      </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 const HomeComponent = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -443,6 +537,85 @@ const HomeComponent = () => {
           100% {
             box-shadow: 0 0 0 0 rgba(0, 255, 255, 0);
           }
+        }
+
+        .cyber-fire-container {
+          position: absolute;
+          bottom: -20%;
+          left: 0;
+          right: 0;
+          height: 200%;
+          transform: scale(2);
+        }
+
+        .cyber-fire {
+          position: absolute;
+          bottom: 0;
+          width: 4px;
+          height: 60px;
+          background: linear-gradient(to top, transparent, rgba(0, 255, 255, 0.5));
+          filter: blur(2px);
+          border-radius: 50% 50% 0 0;
+          animation: cyber-burn 2s infinite;
+        }
+
+        .cyber-fire-base {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          background: linear-gradient(to top, transparent, rgba(0, 255, 255, 0.2));
+          filter: blur(4px);
+          animation: base-pulse 2s infinite;
+        }
+            @keyframes cyber-burn {
+          0% {
+            height: 60px;
+            opacity: 0;
+          }
+          25% {
+            height: 80px;
+            opacity: 0.5;
+          }
+          50% {
+            height: 120px;
+            opacity: 0.3;
+          }
+          75% {
+            height: 90px;
+            opacity: 0.2;
+          }
+          100% {
+            height: 60px;
+            opacity: 0;
+          }
+        }
+
+        @keyframes base-pulse {
+          0%, 100% {
+            opacity: 0.3;
+            transform: scaleY(1);
+          }
+          50% {
+            opacity: 0.5;
+            transform: scaleY(1.2);
+          }
+        }
+
+        /* Generate positions for each fire stream */
+        ${[...Array(20)].map((_, i) => `
+          .cyber-fire-${i + 1} {
+            left: ${5 + (i * 5)}%;
+            animation-delay: ${(i * 0.1).toFixed(1)}s;
+            height: ${60 + Math.random() * 60}px;
+          }
+        `).join('')}
+
+        /* Your existing animations below */
+        @keyframes pulse-glow {
+          0%, 100% { filter: brightness(1) blur(20px); }
+          50% { filter: brightness(1.3) blur(25px); }
         }
       `}</style>
     </div>

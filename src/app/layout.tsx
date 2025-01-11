@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import GlobalLayout from '@/components/providers/GlobalLayout';
 import { Orbitron } from 'next/font/google';
+import './globals.css'
 
 const orbitron = Orbitron({
   subsets: ['latin'],

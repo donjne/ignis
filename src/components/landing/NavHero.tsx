@@ -47,7 +47,7 @@ const NavLink: React.FC<NavLinkProps> = ({ href, children, onClick }) => (
   <motion.a
     href={href}
     onClick={onClick}
-    className="relative text-gray-300 hover:text-white transition-colors px-4 py-2 block w-full md:w-auto text-center font-orbitron"
+    className="relative text-gray-300 hover:text-white transition-colors px-4 py-2 block w-full md:w-auto text-center font-['Orbitron']"
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >
@@ -170,7 +170,7 @@ const HomeComponent = () => {
   const headerY = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
 
   return (
-    <div className="font-sans bg-black min-h-screen relative">
+    <div className="bg-black min-h-screen relative font-['Orbitron']">
       <GradientBackground />
       
       <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />

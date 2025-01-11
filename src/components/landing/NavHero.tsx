@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3, Phone } from 'lucide-react';
+import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3, Phone, Search } from 'lucide-react';
 import { Orbitron } from 'next/font/google';
 import WalletButton from '@/components/landing/WalletButton'
 
@@ -86,9 +86,9 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
             <Coins className="inline-block mr-2 h-4 w-4" />
             LAUNCH
           </NavLink>
-          <NavLink href="/swap" onClick={onClose}>
-            <Gem className="inline-block mr-2 h-4 w-4" />
-            SWAP
+          <NavLink href="/search" onClick={onClose}>
+            <Search className="inline-block mr-2 h-4 w-4" />
+            SEARCH
           </NavLink>
           <NavLink href="/portfolio" onClick={onClose}>
             <BarChart3 className="inline-block mr-2 h-4 w-4" />
@@ -178,11 +178,11 @@ const HomeComponent: React.FC = () => {
             <div className="hidden md:flex items-center space-x-8">
               <NavLink href="/launch">
                 <Coins className="inline-block mr-2 h-4 w-4" />
-                LAUNCH
+                LAUNCHPAD
               </NavLink>
-              <NavLink href="/swap">
-                <Gem className="inline-block mr-2 h-4 w-4" />
-                SWAP
+              <NavLink href="/search">
+                <Search className="inline-block mr-2 h-4 w-4" />
+                SEARCH
               </NavLink>
               <NavLink href="/portfolio">
                 <BarChart3 className="inline-block mr-2 h-4 w-4" />

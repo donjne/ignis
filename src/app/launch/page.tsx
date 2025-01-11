@@ -8,6 +8,10 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LaunchHub from '@/components/launch/LaunchHub';
 import DeployToken from '@/components/launch/DeployToken';
+import DeployCollection from '@/components/launch/DeployCollection';
+import LaunchPumpToken from '@/components/launch/LaunchPumpToken';
+
+
 
 function LaunchContent() {
   const searchParams = useSearchParams();
@@ -17,10 +21,10 @@ function LaunchContent() {
     case 'deploytoken':
       return <DeployToken />;
     // Add other feature cases here as we implement them
-    // case 'deploycollection':
-    //   return <DeployCollection />;
-    // case 'launchpumptoken':
-    //   return <LaunchPumpToken />;
+    case 'deploycollection':
+      return <DeployCollection />;
+    case 'launchpumptoken':
+      return <LaunchPumpToken />;
     default:
       return <LaunchHub />;
   }

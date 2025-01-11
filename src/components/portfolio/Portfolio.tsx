@@ -1,361 +1,441 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wallet,
   Coins,
-  Image as ImageIcon,
+  History,
+  Globe,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Send,
   RefreshCw,
-  ExternalLink
+  AlertCircle,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
-import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { 
-  fetchAssetsByOwner, 
-  fetchAsset,
-  mplCore 
-} from '@metaplex-foundation/mpl-core';
-import { 
-  PublicKey,
-  Connection, 
-  LAMPORTS_PER_SOL
-} from '@solana/web3.js';
 import WalletButton from '@/components/landing/WalletButton';
-import { createSignerFromWalletAdapter } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { WalletAdapter } from '@solana/wallet-adapter-base';
-import { signerIdentity } from '@metaplex-foundation/umi';
+import TransferModal from './TransferModal';
+import { Connection, PublicKey } from '@solana/web3.js';
 
-interface TokenMetadataResult {
-    mint: string;
-    metadata: {
-      name: string;
-      symbol: string;
-      uri?: string;
-      decimals: number;
-    }
-  }
-  
+type Tab = 'assets' | 'transactions' | 'domains';
 
-interface BaseAssetData {
-    name: string;
-    image?: string;
-    address: string;
-    amount: number;
-  }
-  
-  interface NftData extends BaseAssetData {
-    collection?: string;
-    collectionName?: string;
-  }
-  
-  interface TokenData extends BaseAssetData {
-    symbol: string;
-    decimals?: number;
-  }
-const PortfolioPage: React.FC = () => {
-  const { publicKey, connected, wallet } = useWallet() as WalletContextState;
-  const [solBalance, setSolBalance] = useState<number>(0);
-  const [tokens, setTokens] = useState<TokenData[]>([]);
-  const [nfts, setNfts] = useState<NftData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+interface Asset {
+  mint?: string;
+  symbol: string;
+  name: string;
+  balance: number;
+  imageUrl?: string;
+}
 
-  const initializeUmi = async () => {
-    try {
-      const umi = createUmi('https://api.devnet.solana.com')
-        .use(mplCore());
-  
-      if (!publicKey || !wallet) {
-        throw new Error('Wallet not connected');
-      }
-  
-      const signer = createSignerFromWalletAdapter(wallet as unknown as WalletAdapter);
-      umi.use(signerIdentity(signer, true));
-  
-      return umi;
-    } catch (error) {
-      console.error('Error initializing Umi:', error);
-      throw error;
-    }
-  };
+interface Transaction {
+  signature: string;
+  timestamp: number;
+  type: string;
+  amount?: number;
+  token?: string;
+  status: 'success' | 'error';
+}
 
-  const fetchTokenMetadata = async (mints: string[]) => {
-    try {
-      const response = await fetch('/api/tokens/metadata', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ mints }),
-      });
+const Portfolio = () => {
+  const { publicKey, connected } = useWallet();
+  const [activeTab, setActiveTab] = React.useState<Tab>('assets');
+  const [assets, setAssets] = React.useState<Asset[]>([]);
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [domains, setDomains] = React.useState<string[]>([]);
+  const [balance, setBalance] = React.useState<number>(0);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [hasMore, setHasMore] = React.useState(true);
+  const [isTransferModalOpen, setIsTransferModalOpen] = React.useState(false);
+  const [selectedAsset, setSelectedAsset] = React.useState<Asset | null>(null);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch token metadata');
-      }
+  const isAsset = (item: any): item is Asset => 'symbol' in item;
+  const isTransaction = (item: any): item is Transaction => 'signature' in item;
+  const isString = (item: any): item is string => typeof item === 'string';
 
-      const data = await response.json();
-      return data.results;
-    } catch (error) {
-      console.error('Error fetching token metadata:', error);
-      return [];
-    }
-  };
-
-  const processTokens = async (accounts: Array<any>, metadataResults: TokenMetadataResult[]) => {
-    const processedTokens = await Promise.all(
-      accounts.map(async account => {
-        const mint = account.account.data.parsed.info.mint;
-        const metadata = metadataResults.find(m => m.mint === mint)?.metadata;
-        const imageUri = metadata?.uri ? await fetchMetadataUri(metadata.uri) : undefined;
-  
-        return {
-          name: metadata?.name || 'Unknown Token',
-          symbol: metadata?.symbol || '???',
-          amount: Number(account.account.data.parsed.info.tokenAmount.amount),
-          decimals: metadata?.decimals || account.account.data.parsed.info.tokenAmount.decimals,
-          address: mint,
-          image: imageUri
-        };
-      })
-    );
-  
-    return processedTokens;
-  };
-
-  const fetchAssets = async () => {
-    if (!publicKey || !connected) return;
-
+  // Pagination
+  const loadMore = async () => {
+    if (!connected || !publicKey || isLoading || !hasMore) return;
+    
     setIsLoading(true);
-    setError('');
-
     try {
-      const connection = new Connection('https://api.devnet.solana.com');
-      const umi = await initializeUmi();
-
-      // Fetch SOL balance
-      const balance = await connection.getBalance(publicKey);
-      setSolBalance(balance / LAMPORTS_PER_SOL);
-
-      // Fetch NFTs using mplCore - remove symbol from NFTs
-      const nftAssets = await fetchAssetsByOwner(umi, publicKey.toString());
-      const processedNfts = await Promise.all(
-        nftAssets.map(async (asset) => {
-          const fullAsset = await fetchAsset(umi, asset.publicKey);
-          let collectionInfo;
-
-          if (fullAsset.publicKey) {
-            try {
-              const collectionAsset = await fetchAsset(umi, fullAsset.publicKey);
-              collectionInfo = {
-                address: fullAsset.publicKey.toString(),
-                name: collectionAsset.name
-              };
-            } catch (e) {
-              console.error('Error fetching collection:', e);
-            }
+      switch (activeTab) {
+        case 'assets':
+          const assetsResponse = await fetch(
+            `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=${currentPage + 1}`
+          );
+          const newAssets = await assetsResponse.json();
+          if (newAssets.length === 0) {
+            setHasMore(false);
+          } else {
+            setAssets(prev => [...prev, ...newAssets]);
+            setCurrentPage(prev => prev + 1);
           }
+          break;
 
-          return {
-            name: fullAsset.name,
-            image: fullAsset.uri ? await fetchMetadataUri(fullAsset.uri) : undefined,
-            amount: 1,
-            address: asset.publicKey.toString(),
-            collection: collectionInfo?.address,
-            collectionName: collectionInfo?.name
-          };
-        })
-      );
-
-      // Process tokens - keep symbol for tokens
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
-        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
-      });
-
-      const filteredTokenAccounts = tokenAccounts.value
-        .filter(account => Number(account.account.data.parsed.info.tokenAmount.amount) > 0);
-
-      const tokenMints = filteredTokenAccounts.map(account => account.account.data.parsed.info.mint);
-      const tokenMetadataResults = await fetchTokenMetadata(tokenMints);
-
-      const processedTokens = await processTokens(filteredTokenAccounts, tokenMetadataResults);
-
-      setNfts(processedNfts);
-      setTokens(processedTokens);
-
-    } catch (err) {
-      console.error('Error fetching portfolio:', err);
-      setError('Failed to load portfolio data');
+        case 'transactions':
+          const lastTx = transactions[transactions.length - 1]?.signature;
+          const txResponse = await fetch(
+            `/api/portfolio/transactions?account=${publicKey.toBase58()}&cursor=${lastTx}`
+          );
+          const { transactions: newTxs, oldest } = await txResponse.json();
+          if (!oldest) {
+            setHasMore(false);
+          }
+          setTransactions(prev => [...prev, ...newTxs]);
+          break;
+      }
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchMetadataUri = async (uri: string): Promise<string | undefined> => {
+  // Initial data loading
+  const loadData = async () => {
+    if (!connected || !publicKey) return;
+    
+    setIsLoading(true);
+    setError('');
+    
     try {
-      const response = await fetch(uri);
-      const data = await response.json();
-      return data.image;
-    } catch (e) {
-      console.error('Error fetching metadata URI:', e);
-      return undefined;
+      // Load balance
+      const balanceResponse = await fetch(
+        `/api/portfolio/balance?account=${publicKey.toBase58()}`
+      );
+      const { balance } = await balanceResponse.json();
+      setBalance(balance);
+
+      // Load initial assets
+      const assetsResponse = await fetch(
+        `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`
+      );
+      const initialAssets = await assetsResponse.json();
+      setAssets(initialAssets);
+
+      // Load initial transactions
+      const txResponse = await fetch(
+        `/api/portfolio/transactions?account=${publicKey.toBase58()}`
+      );
+      const { transactions: initialTxs } = await txResponse.json();
+      setTransactions(initialTxs);
+
+      // Load domains
+      const domainsResponse = await fetch(
+        `/api/portfolio/domains?account=${publicKey.toBase58()}`
+      );
+      const { domains: initialDomains } = await domainsResponse.json();
+      setDomains(initialDomains);
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
+  // Effect for initial load
+  React.useEffect(() => {
     if (connected && publicKey) {
-      fetchAssets();
+      loadData();
     }
   }, [connected, publicKey]);
 
-  const AssetCard: React.FC<{ 
-    asset: TokenData | NftData; 
-    type: 'token' | 'nft' 
-  }> = ({ asset, type }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-teal-500/10 border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-bold mb-1">{asset.name}</h3>
-          {type === 'token' && (
-            <>
-              <p className="text-sm text-gray-400">{(asset as TokenData).symbol}</p>
-              <p className="text-cyan-400 mt-2">Amount: {asset.amount.toLocaleString()}</p>
-            </>
-          )}
-          {type === 'nft' && 'collectionName' in asset && asset.collectionName && (
-            <p className="text-sm text-gray-400 mt-2">Collection: {asset.collectionName}</p>
-          )}
-        </div>
-        {asset.image ? (
-          <img 
-            src={asset.image} 
-            alt={asset.name}
-            className="w-16 h-16 rounded-lg object-cover"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-cyan-500/20 to-teal-500/20 flex items-center justify-center">
-            {type === 'token' ? (
-              <Coins className="w-8 h-8 text-cyan-400" />
-            ) : (
-              <ImageIcon className="w-8 h-8 text-cyan-400" />
-            )}
-          </div>
-        )}
-      </div>
-      <a
-        href={`https://explorer.solana.com/address/${asset.address}?cluster=devnet`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors mt-4 flex items-center"
-      >
-        View on Explorer
-        <ExternalLink className="w-4 h-4 ml-1" />
-      </a>
-    </motion.div>
-  );
+  // Handle transfer
+  const handleTransfer = async (to: string, amount: number, mint?: string) => {
+    if (!connected || !publicKey) return;
+
+    try {
+      const response = await fetch('/api/portfolio/transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: publicKey.toBase58(),
+          to,
+          amount,
+          mint
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+
+      // Reload data after transfer
+      await loadData();
+      
+    } catch (err: any) {
+      throw new Error(err.message || 'Transfer failed');
+    }
+  };
+
+  // Filter data based on search
+  const filteredData = React.useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    switch (activeTab) {
+      case 'assets':
+        return assets.filter(asset => 
+          asset.name.toLowerCase().includes(query) ||
+          asset.symbol.toLowerCase().includes(query)
+        );
+      case 'transactions':
+        return transactions.filter(tx =>
+          tx.signature.toLowerCase().includes(query) ||
+          tx.type.toLowerCase().includes(query)
+        );
+      case 'domains':
+        return domains.filter(domain =>
+          domain.toLowerCase().includes(query)
+        );
+      default:
+        return [];
+    }
+  }, [activeTab, assets, transactions, domains, searchQuery]);
 
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-16">
-        <div className="flex justify-end mb-8">
+        {/* Header with Balance and Wallet */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div className="text-center md:text-left">
+            <h1 className="text-2xl font-bold mb-2">Portfolio</h1>
+            <div className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              {balance.toFixed(4)} SOL
+            </div>
+          </div>
           <WalletButton />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400">
-            Your Digital Portfolio
-          </h1>
-          <p className="text-gray-400 text-lg">
-            View all your Solana assets in one place
-          </p>
-        </motion.div>
-
-        {!connected ? (
-          <div className="text-center text-gray-400">
-            Please connect your wallet to view your portfolio
+        {/* Search and Tabs */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+            <div className="relative w-full md:w-96">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-3 pl-10 rounded-lg bg-black/50 border border-gray-800 focus:border-blue-500 outline-none"
+                placeholder={`Search ${activeTab}...`}
+              />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('assets')}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'assets'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-black/30 text-gray-400 hover:text-white'
+                }`}
+              >
+                <Coins className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setActiveTab('transactions')}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'transactions'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-black/30 text-gray-400 hover:text-white'
+                }`}
+              >
+                <History className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setActiveTab('domains')}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'domains'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-black/30 text-gray-400 hover:text-white'
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-8">
-            {/* SOL Balance */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-6 rounded-xl bg-gradient-to-br from-cyan-500/10 to-teal-500/10 border border-cyan-500/20"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">SOL Balance</h2>
-                  <p className="text-3xl text-cyan-400">{solBalance.toFixed(4)} SOL</p>
-                </div>
-                <Wallet className="w-12 h-12 text-cyan-400" />
-              </div>
-            </motion.div>
-
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin" />
-              </div>
-            )}
-
-            {/* Error State */}
-            {error && (
-              <div className="text-red-400 text-center py-4">
-                {error}
-              </div>
-            )}
-
-            {/* Tokens */}
-            {tokens.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Tokens</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {tokens.map((token) => (
-                    <AssetCard key={token.address} asset={token} type="token" />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* NFTs */}
-            {nfts.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">NFTs</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {nfts.map((nft) => (
-                    <AssetCard key={nft.address} asset={nft} type="nft" />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* No Assets State */}
-            {!isLoading && tokens.length === 0 && nfts.length === 0 && (
-              <div className="text-center text-gray-400 py-12">
-                No assets found in your wallet
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Background Elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-black to-teal-900/20" />
-        <div className="absolute inset-0">
-          <div className="grid-animation opacity-10" />
         </div>
-      </div>
-    </div>
-  );
+
+        {/* Content Area */}
+        <div className="bg-black/20 border border-gray-800 rounded-xl p-6">
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+
+          {!connected ? (
+            <div className="text-center py-12 text-gray-400">
+              Please connect your wallet to view your portfolio
+            </div>
+          ) : isLoading && (activeTab === 'assets' ? assets.length === 0 : activeTab === 'transactions' ? transactions.length === 0 : domains.length === 0) ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {activeTab === 'assets' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(filteredData as Asset[]).map((asset, index) => (
+                    <motion.div
+                      key={asset.mint || index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-4 rounded-lg bg-black/30 border border-gray-800 hover:border-blue-500/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {asset.imageUrl ? (
+                            <img 
+                              src={asset.imageUrl} 
+                              alt={asset.name}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                              <Coins className="w-5 h-5 text-blue-400" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-medium">{asset.name}</h3>
+                            <p className="text-sm text-gray-400">{asset.symbol}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedAsset(asset);
+                            setIsTransferModalOpen(true);
+                          }}
+                          className="p-2 rounded-lg hover:bg-blue-500/20 transition-colors"
+                        >
+                          <Send className="w-4 h-4 text-blue-400" />
+                        </button>
+                      </div>
+                      <div className="text-xl font-bold">
+                        {asset.balance.toFixed(4)}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'transactions' && (
+                <div className="space-y-4">
+                  {(filteredData as Transaction[]).map((tx, index) => (
+                    <motion.div
+                      key={tx.signature}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-4 rounded-lg bg-black/30 border border-gray-800 hover:border-blue-500/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-400">
+                            {new Date(tx.timestamp * 1000).toLocaleDateString()}
+                          </p>
+                          <p className="font-medium">{tx.type}</p>
+                          {tx.amount && (
+                            <p className="text-sm">
+                              {tx.amount.toFixed(4)} {tx.token || 'SOL'}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            tx.status === 'success' 
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {tx.status}
+                          </span>
+                          <a
+                            href={`https://solscan.io/tx/${tx.signature}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-lg hover:bg-blue-500/20 transition-colors"
+                          >
+                            <ExternalLink className="w-4 h-4 text-blue-400" />
+                          </a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'domains' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(filteredData as string[]).map((domain, index) => (
+                    <motion.div
+                      key={domain}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-4 rounded-lg bg-black/30 border border-gray-800 hover:border-blue-500/50 transition-colors"
+                    >
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                           <Globe className="w-5 h-5 text-blue-400" />
+                         </div>
+                         <span className="font-medium">{domain}</span>
+                       </div>
+                       <button
+                         onClick={() => {
+                           navigator.clipboard.writeText(domain);
+                           // Could add a toast notification here
+                         }}
+                         className="p-2 rounded-lg hover:bg-blue-500/20 transition-colors"
+                       >
+                         <Copy className="w-4 h-4 text-blue-400" />
+                       </button>
+                     </div>
+                   </motion.div>
+                 ))}
+               </div>
+             )}
+
+             {/* Load More Button */}
+             {hasMore && activeTab !== 'domains' && (
+               <div className="flex justify-center mt-8">
+                 <button
+                   onClick={loadMore}
+                   disabled={isLoading}
+                   className="px-6 py-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                 >
+                   {isLoading ? (
+                     <RefreshCw className="w-5 h-5 animate-spin" />
+                   ) : (
+                     'Load More'
+                   )}
+                 </button>
+               </div>
+             )}
+           </div>
+         )}
+       </div>
+     </div>
+
+     {/* Transfer Modal */}
+     <TransferModal
+       isOpen={isTransferModalOpen}
+       onClose={() => {
+         setIsTransferModalOpen(false);
+         setSelectedAsset(null);
+       }}
+       onTransfer={handleTransfer}
+       selectedAsset={selectedAsset || undefined}
+     />
+   </div>
+ );
 };
 
-export default PortfolioPage;
+export default Portfolio;

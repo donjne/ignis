@@ -11,6 +11,7 @@ import {
   RefreshCw,
   XCircle
 } from 'lucide-react';
+import { Navbar } from '@/components/Navbar'; // Update the import path as needed
 
 const ContactForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,6 @@ const ContactForm: React.FC = () => {
       setStatus('success');
       setFormData({ name: '', email: '', message: '' });
       
-      // Reset success state after 3 seconds
       setTimeout(() => setStatus('idle'), 3000);
     } catch (error) {
       setStatus('error');
@@ -54,30 +54,33 @@ const ContactForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white py-16 px-4">
-      <div className="max-w-xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400">
-            Get in Touch
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Have a question? We'd love to hear from you.
-          </p>
-        </motion.div>
+    <div className="min-h-screen bg-black text-white">
+      <Navbar currentPath="/contact" />
+      
+      <div className="pt-24 px-4 pb-16">
+        <div className="max-w-xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400 font-['Orbitron']">
+              Get in Touch
+            </h1>
+            <p className="text-gray-400 text-lg">
+              Have a question? We'd love to hear from you.
+            </p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-teal-500/10 rounded-xl blur-xl" />
-          
-          <div className="relative bg-black/40 backdrop-blur-sm p-8 rounded-xl border border-cyan-500/20">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-teal-500/10 rounded-xl blur-xl" />
+            
+            <div className="relative bg-black/40 backdrop-blur-sm p-8 rounded-xl border border-cyan-500/20">
+              <form onSubmit={handleSubmit} className="space-y-6">
               <motion.div variants={formControls} initial="initial" animate="animate">
                 <div className="relative">
                   <label className="block text-sm font-medium mb-2 text-gray-300">Name</label>
@@ -170,9 +173,10 @@ const ContactForm: React.FC = () => {
                   </>
                 )}
               </motion.button>
-            </form>
-          </div>
-        </motion.div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Background Elements */}

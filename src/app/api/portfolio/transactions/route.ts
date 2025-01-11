@@ -1,14 +1,10 @@
 // app/api/portfolio/transactions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const account = searchParams.get('account');
-    const cursor = searchParams.get('cursor');
-    const filter = searchParams.get('filter');
-    const isMainnet = searchParams.get('network') === 'mainnet';
-
+    
     if (!account) {
       return NextResponse.json(
         { error: 'Account address is required' },
@@ -18,15 +14,20 @@ export async function GET(req: NextRequest) {
 
     const heliusApiKey = process.env.HELIUS_API_KEY;
     if (!heliusApiKey) {
-      throw new Error("Helius API key not provided");
+      console.error('Missing Helius API key');
+      return NextResponse.json(
+        { error: 'Configuration error' },
+        { status: 500 }
+      );
     }
 
-    const url = `https://${isMainnet ? 'mainnet' : 'devnet'}.helius-rpc.com/v0/addresses/${account}/transactions`;
-    const apiUrl = `${url}?api-key=${heliusApiKey}${filter ? `&type=${filter}` : ''}${cursor ? `&before=${cursor}` : ''}`;
+    const url = `https://api.helius.xyz/v0/addresses/${account}/transactions`;
+    console.log('Fetching from:', url); // Debug log
 
-    const response = await fetch(apiUrl);
+    const response = await fetch(url);
     if (!response.ok) {
-      throw new Error('Failed to fetch transactions');
+      console.error('Helius API error:', await response.text());
+      throw new Error('Failed to fetch transactions from Helius');
     }
 
     const data = await response.json();
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
       oldest: data[data.length - 1]?.signature || ''
     });
   } catch (error: any) {
+    console.error('Transaction API error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to fetch transactions' },
       { status: 500 }

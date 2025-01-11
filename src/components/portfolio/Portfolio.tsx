@@ -56,10 +56,6 @@ const Portfolio = () => {
   const [selectedAsset, setSelectedAsset] = React.useState<Asset | null>(null);
   const router = useRouter();
 
-  const isAsset = (item: any): item is Asset => 'symbol' in item;
-  const isTransaction = (item: any): item is Transaction => 'signature' in item;
-  const isString = (item: any): item is string => typeof item === 'string';
-
   // Pagination
   const loadMore = async () => {
     if (!connected || !publicKey || isLoading || !hasMore) return;
@@ -100,47 +96,39 @@ const Portfolio = () => {
   };
 
   // Initial data loading
-  const loadData = async () => {
-    if (!connected || !publicKey) return;
-    
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      // Load balance
-      const balanceResponse = await fetch(
-        `/api/portfolio/balance?account=${publicKey.toBase58()}`
-      );
-      const { balance } = await balanceResponse.json();
-      setBalance(balance);
+const loadData = async () => {
+  if (!connected || !publicKey) return;
+  
+  setIsLoading(true);
+  setError('');
+  
+  try {
+    const responses = await Promise.allSettled([
+      fetch(`/api/portfolio/balance?account=${publicKey.toBase58()}`),
+      fetch(`/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`),
+      fetch(`/api/portfolio/transactions?account=${publicKey.toBase58()}`),
+      fetch(`/api/portfolio/domains?account=${publicKey.toBase58()}`)
+    ]);
 
-      // Load initial assets
-      const assetsResponse = await fetch(
-        `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`
-      );
-      const initialAssets = await assetsResponse.json();
-      setAssets(initialAssets);
-
-      // Load initial transactions
-      const txResponse = await fetch(
-        `/api/portfolio/transactions?account=${publicKey.toBase58()}`
-      );
-      const { transactions: initialTxs } = await txResponse.json();
-      setTransactions(initialTxs);
-
-      // Load domains
-      const domainsResponse = await fetch(
-        `/api/portfolio/domains?account=${publicKey.toBase58()}`
-      );
-      const { domains: initialDomains } = await domainsResponse.json();
-      setDomains(initialDomains);
-
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // Handle each response individually
+    responses.forEach(async (response, index) => {
+      if (response.status === 'fulfilled' && response.value.ok) {
+        const data = await response.value.json();
+        switch(index) {
+          case 0: setBalance(data.balance || 0); break;
+          case 1: setAssets(data || []); break;
+          case 2: setTransactions(data.transactions || []); break;
+          case 3: setDomains(data.domains || []); break;
+        }
+      }
+    });
+  } catch (err: any) {
+    console.error('Data loading error:', err);
+    setError('Failed to load some data. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Effect for initial load
   React.useEffect(() => {
@@ -181,21 +169,23 @@ const Portfolio = () => {
   // Filter data based on search
   const filteredData = React.useMemo(() => {
     const query = searchQuery.toLowerCase();
+    
+    // Add null checks and ensure we're working with arrays
     switch (activeTab) {
       case 'assets':
-        return assets.filter(asset => 
+        return Array.isArray(assets) ? assets.filter(asset => 
           asset.name.toLowerCase().includes(query) ||
           asset.symbol.toLowerCase().includes(query)
-        );
+        ) : [];
       case 'transactions':
-        return transactions.filter(tx =>
+        return Array.isArray(transactions) ? transactions.filter(tx =>
           tx.signature.toLowerCase().includes(query) ||
           tx.type.toLowerCase().includes(query)
-        );
+        ) : [];
       case 'domains':
-        return domains.filter(domain =>
+        return Array.isArray(domains) ? domains.filter(domain =>
           domain.toLowerCase().includes(query)
-        );
+        ) : [];
       default:
         return [];
     }

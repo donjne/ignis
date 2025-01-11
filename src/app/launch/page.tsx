@@ -1,15 +1,18 @@
 // app/launch/page.tsx
 "use client";
 
+// app/launch/page.tsx
+"use client";
+
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import LaunchHub from '@/components/launch/LaunchHub';  // Renamed from Form
+import LaunchHub from '@/components/launch/LaunchHub';
 import DeployToken from '@/components/launch/DeployToken';
 
-export default function LaunchPage() {
+function LaunchContent() {
   const searchParams = useSearchParams();
   const feature = searchParams.get('feature');
 
-  // Render the appropriate component based on the feature parameter
   switch (feature) {
     case 'deploytoken':
       return <DeployToken />;
@@ -22,3 +25,15 @@ export default function LaunchPage() {
       return <LaunchHub />;
   }
 }
+
+export default function LaunchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-cyan-400"></div>
+      </div>
+    }>
+      <LaunchContent />
+    </Suspense>
+  );
+}    

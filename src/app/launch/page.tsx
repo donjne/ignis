@@ -12,6 +12,8 @@ import DeployCollection from '@/components/launch/DeployCollection';
 import LaunchPumpToken from '@/components/launch/LaunchPumpToken';
 import MintNFT from '@/components/launch/Mint';
 import Trade from '@/components/launch/Trade';
+import TensorTrade from '@/components/launch/TensorTrade';
+
 
 
 function LaunchContent() {
@@ -30,6 +32,8 @@ function LaunchContent() {
       return <MintNFT />;
     case 'trade':
       return <Trade />;
+    case 'tensortrade':
+      return <TensorTrade />;
     default:
       return <LaunchHub />;
   }

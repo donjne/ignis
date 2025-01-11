@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3 } from 'lucide-react';
+import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3, Phone } from 'lucide-react';
 import { Orbitron } from 'next/font/google';
 import WalletButton from '@/components/landing/WalletButton'
 
@@ -94,6 +94,10 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
             <BarChart3 className="inline-block mr-2 h-4 w-4" />
             PORTFOLIO
           </NavLink>
+          <NavLink href="/contact" onClick={onClose}>
+                <Phone className="inline-block mr-2 h-4 w-4" />
+                CONTACT
+              </NavLink>
           <motion.button
             className="px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium w-48"
             whileHover={{ scale: 1.05 }}
@@ -183,6 +187,10 @@ const HomeComponent: React.FC = () => {
               <NavLink href="/portfolio">
                 <BarChart3 className="inline-block mr-2 h-4 w-4" />
                 PORTFOLIO
+              </NavLink>
+              <NavLink href="/contact">
+                <Phone className="inline-block mr-2 h-4 w-4" />
+                CONTACT
               </NavLink>
               <WalletButton />
             </div>

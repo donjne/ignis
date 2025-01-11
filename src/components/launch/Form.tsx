@@ -876,7 +876,14 @@ const LaunchPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-16">
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-between items-center mb-8">
+          <button 
+            onClick={() => window.history.back()}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-400 border border-cyan-500/20 hover:border-cyan-500/40 transition-all flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Go Back
+          </button>
           <WalletButton />
         </div>
 

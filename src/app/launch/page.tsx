@@ -10,7 +10,7 @@ import LaunchHub from '@/components/launch/LaunchHub';
 import DeployToken from '@/components/launch/DeployToken';
 import DeployCollection from '@/components/launch/DeployCollection';
 import LaunchPumpToken from '@/components/launch/LaunchPumpToken';
-
+import MintNFT from '@/components/launch/Mint';
 
 
 function LaunchContent() {
@@ -25,6 +25,8 @@ function LaunchContent() {
       return <DeployCollection />;
     case 'launchpumptoken':
       return <LaunchPumpToken />;
+    case 'mint':
+      return <MintNFT />;
     default:
       return <LaunchHub />;
   }

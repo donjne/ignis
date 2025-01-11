@@ -111,7 +111,7 @@ const DeployToken = () => {
       <div className="container mx-auto px-4 py-16">
         <div className="flex justify-between items-center mb-8">
           <button 
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/launch')}
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />

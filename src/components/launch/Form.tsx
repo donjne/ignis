@@ -914,8 +914,3 @@ const LaunchPage: React.FC = () => {
 };
 
 export default LaunchPage;
-
-// First Call of the Year - what to expect
-// welcome everybody, give everyone a chance to speak
-// Talk about the 30 days bootcamp and get progress feedback
-// Dive into explaining our core focus this year.

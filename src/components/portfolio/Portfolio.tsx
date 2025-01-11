@@ -103,28 +103,39 @@ const loadData = async () => {
   setError('');
   
   try {
-    const responses = await Promise.allSettled([
-      fetch(`/api/portfolio/balance?account=${publicKey.toBase58()}`),
-      fetch(`/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`),
-      fetch(`/api/portfolio/transactions?account=${publicKey.toBase58()}`),
-      fetch(`/api/portfolio/domains?account=${publicKey.toBase58()}`)
-    ]);
+    // Load balance
+    const balanceResponse = await fetch(
+      `/api/portfolio/balance?account=${publicKey.toBase58()}`
+    );
+    const balanceData = await balanceResponse.json();
+    if (balanceData.balance !== undefined) {
+      setBalance(balanceData.balance);
+    }
 
-    // Handle each response individually
-    responses.forEach(async (response, index) => {
-      if (response.status === 'fulfilled' && response.value.ok) {
-        const data = await response.value.json();
-        switch(index) {
-          case 0: setBalance(data.balance || 0); break;
-          case 1: setAssets(data || []); break;
-          case 2: setTransactions(data.transactions || []); break;
-          case 3: setDomains(data.domains || []); break;
-        }
-      }
-    });
+    // Load assets
+    const assetsResponse = await fetch(
+      `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`
+    );
+    const assetsData = await assetsResponse.json();
+    setAssets(Array.isArray(assetsData) ? assetsData : []);
+
+    // Load transactions
+    const txResponse = await fetch(
+      `/api/portfolio/transactions?account=${publicKey.toBase58()}`
+    );
+    const txData = await txResponse.json();
+    setTransactions(Array.isArray(txData.transactions) ? txData.transactions : []);
+
+    // Load domains
+    const domainsResponse = await fetch(
+      `/api/portfolio/domains?account=${publicKey.toBase58()}`
+    );
+    const domainsData = await domainsResponse.json();
+    setDomains(Array.isArray(domainsData.domains) ? domainsData.domains : []);
+
   } catch (err: any) {
     console.error('Data loading error:', err);
-    setError('Failed to load some data. Please try again.');
+    setError('Failed to load portfolio data');
   } finally {
     setIsLoading(false);
   }
@@ -169,23 +180,21 @@ const loadData = async () => {
   // Filter data based on search
   const filteredData = React.useMemo(() => {
     const query = searchQuery.toLowerCase();
-    
-    // Add null checks and ensure we're working with arrays
     switch (activeTab) {
       case 'assets':
-        return Array.isArray(assets) ? assets.filter(asset => 
-          asset.name.toLowerCase().includes(query) ||
-          asset.symbol.toLowerCase().includes(query)
-        ) : [];
+        return (assets || []).filter(asset => 
+          asset?.name?.toLowerCase().includes(query) ||
+          asset?.symbol?.toLowerCase().includes(query)
+        );
       case 'transactions':
-        return Array.isArray(transactions) ? transactions.filter(tx =>
-          tx.signature.toLowerCase().includes(query) ||
-          tx.type.toLowerCase().includes(query)
-        ) : [];
+        return (transactions || []).filter(tx =>
+          tx?.signature?.toLowerCase().includes(query) ||
+          tx?.type?.toLowerCase().includes(query)
+        );
       case 'domains':
-        return Array.isArray(domains) ? domains.filter(domain =>
-          domain.toLowerCase().includes(query)
-        ) : [];
+        return (domains || []).filter(domain =>
+          domain?.toLowerCase().includes(query)
+        );
       default:
         return [];
     }

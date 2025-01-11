@@ -3,33 +3,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TldParser } from "@onsol/tldparser";
 
+// app/api/portfolio/domains/route.ts
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const account = searchParams.get('account');
-    const isMainnet = searchParams.get('network') === 'mainnet';
-
+    
     if (!account) {
-      return NextResponse.json(
-        { error: 'Account address is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ domains: [] });
     }
 
     const connection = new Connection(
-      process.env.NEXT_PUBLIC_RPC_URL || `https://api.${isMainnet ? 'mainnet-beta' : 'devnet'}.solana.com`
+      process.env.NEXT_PUBLIC_RPC_URL || 'https://api.mainnet-beta.solana.com'
     );
 
-    const domains = await new TldParser(connection)
-      .getParsedAllUserDomains(new PublicKey(account));
-
-    return NextResponse.json({
-      domains: domains.map(domain => domain.domain)
-    });
+    try {
+      const pubkey = new PublicKey(account);
+      const parser = new TldParser(connection);
+      const domains = await parser.getParsedAllUserDomains(pubkey);
+      
+      return NextResponse.json({
+        domains: domains?.map(domain => domain.domain) || []
+      });
+    } catch (error) {
+      console.error('Domain parsing error:', error);
+      // Return empty array instead of error
+      return NextResponse.json({ domains: [] });
+    }
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch domains' },
-      { status: 500 }
-    );
+    console.error('Domains API error:', error);
+    // Return empty array instead of error
+    return NextResponse.json({ domains: [] });
   }
 }

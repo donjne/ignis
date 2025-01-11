@@ -17,6 +17,7 @@
     "@metaplex-foundation/umi-signer-wallet-adapters": "^1.0.0",
     "@react-three/drei": "^9.120.5",
     "@react-three/fiber": "^8.17.10",
+    "@solana/spl-token": "^0.4.9",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",

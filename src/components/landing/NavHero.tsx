@@ -21,23 +21,44 @@ interface MobileMenuProps {
   onClose: () => void;
 }
 
+const FIRE_POSITIONS = [
+  { left: '5%', height: '80px', delay: '0s' },
+  { left: '15%', height: '90px', delay: '0.1s' },
+  { left: '25%', height: '70px', delay: '0.2s' },
+  { left: '35%', height: '85px', delay: '0.3s' },
+  { left: '45%', height: '95px', delay: '0.4s' },
+  { left: '55%', height: '75px', delay: '0.5s' },
+  { left: '65%', height: '88px', delay: '0.6s' },
+  { left: '75%', height: '82px', delay: '0.7s' },
+  { left: '85%', height: '78px', delay: '0.8s' },
+  { left: '95%', height: '86px', delay: '0.9s' }
+];
+
 const GradientBackground: React.FC = () => (
   <div className="fixed inset-0 z-0 overflow-hidden">
     <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-black to-teal-900/20" />
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,0.7),rgba(0,0,0,0.9))]" />
     <div className="grid-animation absolute inset-0 opacity-20" />
     
-    {/* New Cyber Fire Effect */}
+    {/* Cyber Fire Effect */}
     <div className="absolute bottom-0 left-0 right-0 h-full overflow-hidden">
       <div className="cyber-fire-container">
-        {[...Array(20)].map((_, i) => (
-          <div key={i} className={`cyber-fire cyber-fire-${i + 1}`} />
+        {FIRE_POSITIONS.map((pos, i) => (
+          <div
+            key={i}
+            className="cyber-fire"
+            style={{
+              left: pos.left,
+              height: pos.height,
+              animationDelay: pos.delay
+            }}
+          />
         ))}
       </div>
       <div className="cyber-fire-base" />
     </div>
     
-    {/* Existing Effects */}
+    {/* Rest of your background effects */}
     <div className="absolute bottom-0 left-0 right-0 h-full overflow-hidden">
       <div className="fire-container">
         {[...Array(5)].map((_, i) => (
@@ -602,15 +623,6 @@ const HomeComponent = () => {
             transform: scaleY(1.2);
           }
         }
-
-        /* Generate positions for each fire stream */
-        ${[...Array(20)].map((_, i) => `
-          .cyber-fire-${i + 1} {
-            left: ${5 + (i * 5)}%;
-            animation-delay: ${(i * 0.1).toFixed(1)}s;
-            height: ${60 + Math.random() * 60}px;
-          }
-        `).join('')}
 
         /* Your existing animations below */
         @keyframes pulse-glow {

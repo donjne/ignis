@@ -13,6 +13,9 @@ import LaunchPumpToken from '@/components/launch/LaunchPumpToken';
 import MintNFT from '@/components/launch/Mint';
 import Trade from '@/components/launch/Trade';
 import TensorTrade from '@/components/launch/TensorTrade';
+import Lend from '@/components/launch/Lend';
+import Stake from '@/components/launch/Stake';
+
 
 
 
@@ -34,6 +37,10 @@ function LaunchContent() {
       return <Trade />;
     case 'tensortrade':
       return <TensorTrade />;
+    case 'lend':
+      return <Lend />;
+    case 'stake':
+      return <Stake />;
     default:
       return <LaunchHub />;
   }

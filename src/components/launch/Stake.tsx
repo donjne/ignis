@@ -3,29 +3,52 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
-  PiggyBank,
+  BarChart3,
   RefreshCw,
   Check,
   AlertCircle,
-  DollarSign
+  Coins,
+  BellRing
 } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import WalletButton from '@/components/landing/WalletButton';
 
-const Lend = () => {
+interface FormData {
+  amount: number;
+  provider: 'jupiter' | 'solayer';
+}
+
+const PROVIDERS = {
+  jupiter: {
+    name: 'Jupiter',
+    description: 'Stake SOL and receive jupSOL',
+    apy: '~6.5%'
+  },
+  solayer: {
+    name: 'Solayer',
+    description: 'Stake SOL and receive sSOL',
+    apy: '~7%'
+  }
+};
+
+const Stake = () => {
   const router = useRouter();
   const { publicKey, signTransaction, connected } = useWallet();
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState<{
     signature: string;
+    provider: string;
   } | null>(null);
   
-  const [amount, setAmount] = React.useState<number>(0);
+  const [formData, setFormData] = React.useState<FormData>({
+    amount: 0,
+    provider: 'jupiter'
+  });
 
   const validateForm = () => {
-    if (!amount || amount <= 0) {
+    if (!formData.amount || formData.amount <= 0) {
       setError('Please enter a valid amount');
       return false;
     }
@@ -46,13 +69,13 @@ const Lend = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch('/api/lend', {
+      const response = await fetch('/api/stake', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount,
+          ...formData,
           wallet: publicKey?.toBase58()
         }),
       });
@@ -60,7 +83,7 @@ const Lend = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create lending transaction');
+        throw new Error(data.error || 'Failed to create staking transaction');
       }
 
       // Deserialize and sign transaction
@@ -90,9 +113,12 @@ const Lend = () => {
         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
       });
 
-      setSuccess({ signature });
+      setSuccess({ 
+        signature,
+        provider: PROVIDERS[formData.provider].name
+      });
     } catch (err: any) {
-      setError(err.message || 'Failed to lend tokens');
+      setError(err.message || 'Failed to stake tokens');
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +130,7 @@ const Lend = () => {
         <div className="flex justify-between items-center mb-8">
           <button 
             onClick={() => router.push('/launch')}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-400 border border-violet-500/20 hover:border-violet-500/40 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400 border border-pink-500/20 hover:border-pink-500/40 transition-all flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Hub
@@ -117,11 +143,11 @@ const Lend = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-purple-400">
-            Lend for Yield
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-400">
+            Stake SOL
           </h1>
           <p className="text-gray-400 text-lg">
-            Lend your USDC tokens to earn yield with Lulo
+            Stake your SOL tokens to earn rewards
           </p>
         </motion.div>
 
@@ -132,25 +158,47 @@ const Lend = () => {
             className="w-full max-w-xl"
           >
             {!success ? (
-              <form onSubmit={handleSubmit} className="p-8 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20">
+              <form onSubmit={handleSubmit} className="p-8 rounded-xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-500/20">
                 <div className="flex items-center justify-center mb-8">
-                  <PiggyBank className="w-16 h-16 text-violet-400" />
+                  <BarChart3 className="w-16 h-16 text-pink-400" />
                 </div>
 
                 <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(PROVIDERS).map(([key, provider]) => (
+                      <div
+                        key={key}
+                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                          formData.provider === key
+                            ? 'bg-pink-500/20 border-pink-500/40'
+                            : 'bg-black/30 border-pink-500/20 hover:border-pink-500/30'
+                        }`}
+                        onClick={() => setFormData(prev => ({ ...prev, provider: key as 'jupiter' | 'solayer' }))}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{provider.name}</h3>
+                          <div className="px-2 py-1 text-xs rounded-full bg-pink-500/20 text-pink-400">
+                            APY {provider.apy}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-400">{provider.description}</p>
+                      </div>
+                    ))}
+                  </div>
+
                   <div>
-                    <label className="block text-sm font-medium mb-2">Amount (USDC)</label>
+                    <label className="block text-sm font-medium mb-2">Amount (SOL)</label>
                     <div className="relative">
                       <input
                         type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(Number(e.target.value))}
-                        className="w-full p-3 pl-10 rounded-lg bg-black/50 border border-violet-500/20 focus:border-violet-500/50 outline-none"
-                        placeholder="Enter amount to lend"
+                        value={formData.amount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        className="w-full p-3 pl-10 rounded-lg bg-black/50 border border-pink-500/20 focus:border-pink-500/50 outline-none"
+                        placeholder="Enter amount to stake"
                         min="0"
-                        step="1"
+                        step="0.1"
                       />
-                      <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Coins className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
                   </div>
 
@@ -166,14 +214,14 @@ const Lend = () => {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isLoading || !connected}
-                    className="w-full p-4 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 text-white font-medium hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300 flex items-center justify-center disabled:opacity-50"
+                    className="w-full p-4 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium hover:shadow-lg hover:shadow-pink-500/25 transition-all duration-300 flex items-center justify-center disabled:opacity-50"
                   >
                     {isLoading ? (
                       <RefreshCw className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        <PiggyBank className="w-5 h-5 mr-2" />
-                        Lend Tokens
+                        <BarChart3 className="w-5 h-5 mr-2" />
+                        Stake SOL
                       </>
                     )}
                   </motion.button>
@@ -183,18 +231,18 @@ const Lend = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-8 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20 text-center"
+                className="p-8 rounded-xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-500/20 text-center"
               >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center mx-auto mb-6">
                   <Check className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold mb-4">Tokens Lent Successfully!</h2>
+                <h2 className="text-2xl font-bold mb-4">SOL Staked Successfully!</h2>
                 <p className="text-gray-400 mb-6">
-                  Your USDC tokens have been lent to earn yield on Lulo.
+                  Your SOL has been staked with {success.provider}.
                 </p>
                 <div className="bg-black/30 rounded-lg p-4 mb-8">
                   <p className="text-sm text-gray-300 break-all">
-                    <span className="text-violet-400">Transaction Signature: </span>
+                    <span className="text-pink-400">Transaction Signature: </span>
                     {success.signature}
                   </p>
                 </div>
@@ -203,11 +251,14 @@ const Lend = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setSuccess(null);
-                    setAmount(0);
+                    setFormData(prev => ({
+                      ...prev,
+                      amount: 0
+                    }));
                   }}
-                  className="px-6 py-3 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 text-white font-medium hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300"
+                  className="px-6 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white font-medium hover:shadow-lg hover:shadow-pink-500/25 transition-all duration-300"
                 >
-                  Lend More Tokens
+                  Stake More SOL
                 </motion.button>
               </motion.div>
             )}
@@ -217,7 +268,7 @@ const Lend = () => {
 
       {/* Background Elements */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-black to-purple-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-900/20 via-black to-rose-900/20" />
         <div className="absolute inset-0">
           <div className="grid-animation opacity-10" />
         </div>
@@ -226,4 +277,4 @@ const Lend = () => {
   );
 };
 
-export default Lend;
+export default Stake;

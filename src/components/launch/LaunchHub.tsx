@@ -1,3 +1,5 @@
+// components/launch/LaunchHub.tsx
+'use client'
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -23,7 +25,7 @@ const LaunchHub = () => {
       title: "Deploy Token",
       description: "Create and deploy your own token using Token Metadata",
       icon: Coins,
-      route: "?feature=deploytoken",
+      route: "/launch?feature=deploytoken",  // Updated route
       gradient: "from-blue-500/10 to-indigo-500/10",
       border: "border-blue-500/20 hover:border-blue-500/40"
     },
@@ -31,7 +33,7 @@ const LaunchHub = () => {
       title: "Deploy Collection",
       description: "Create an NFT collection using Core",
       icon: Layers,
-      route: "?feature=deploycollection",
+      route: "/launch?feature=deploycollection",  // Updated route
       gradient: "from-purple-500/10 to-pink-500/10",
       border: "border-purple-500/20 hover:border-purple-500/40"
     },
@@ -39,7 +41,7 @@ const LaunchHub = () => {
       title: "Launch Pump Token",
       description: "Launch your token on Pump.fun",
       icon: Rocket,
-      route: "?feature=launchpumptoken",
+      route: "/launch?feature=launchpumptoken",  // Updated route
       gradient: "from-red-500/10 to-orange-500/10",
       border: "border-red-500/20 hover:border-red-500/40"
     },
@@ -47,7 +49,7 @@ const LaunchHub = () => {
       title: "Mint NFTs",
       description: "Mint NFTs to your existing collection",
       icon: ImageIcon,
-      route: "?feature=mint",
+      route: "/launch?feature=mint",  // Updated route
       gradient: "from-green-500/10 to-emerald-500/10",
       border: "border-green-500/20 hover:border-green-500/40"
     },
@@ -55,7 +57,7 @@ const LaunchHub = () => {
       title: "Trade Tokens",
       description: "Trade tokens on decentralized exchanges",
       icon: Share2,
-      route: "?feature=trade",
+      route: "/launch?feature=trade",  // Updated route
       gradient: "from-yellow-500/10 to-amber-500/10",
       border: "border-yellow-500/20 hover:border-yellow-500/40"
     },
@@ -63,7 +65,7 @@ const LaunchHub = () => {
       title: "Trade on Tensor",
       description: "Trade NFTs on Tensor marketplace",
       icon: Handshake,
-      route: "?feature=tensortrade",
+      route: "/launch?feature=tensortrade",  // Updated route
       gradient: "from-cyan-500/10 to-teal-500/10",
       border: "border-cyan-500/20 hover:border-cyan-500/40"
     },
@@ -71,7 +73,7 @@ const LaunchHub = () => {
       title: "Lend Tokens",
       description: "Lend tokens for yield using Lulo",
       icon: PiggyBank,
-      route: "?feature=lend",
+      route: "/launch?feature=lend",  // Updated route
       gradient: "from-violet-500/10 to-purple-500/10",
       border: "border-violet-500/20 hover:border-violet-500/40"
     },
@@ -79,7 +81,7 @@ const LaunchHub = () => {
       title: "Stake",
       description: "Stake with Jupiter or Solayer",
       icon: BarChart3,
-      route: "?feature=stake",
+      route: "/launch?feature=stake",  // Updated route
       gradient: "from-pink-500/10 to-rose-500/10",
       border: "border-pink-500/20 hover:border-pink-500/40"
     }
@@ -90,7 +92,7 @@ const LaunchHub = () => {
       <div className="container mx-auto px-4 py-16">
         <div className="flex justify-between items-center mb-8">
           <button 
-            onClick={() => window.history.back()}
+            onClick={() => router.push('/')}  // Updated to go to home
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-400 border border-cyan-500/20 hover:border-cyan-500/40 transition-all flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />

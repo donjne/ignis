@@ -3,14 +3,7 @@
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Rocket, Wallet, Menu, X, Coins, Gem, BarChart3, Phone, Search } from 'lucide-react';
-import { Orbitron } from 'next/font/google';
 import WalletButton from '@/components/landing/WalletButton'
-
-const orbitron = Orbitron({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-orbitron',
-});
 
 interface NavLinkProps {
   href: string;
@@ -140,7 +133,7 @@ const HomeComponent: React.FC = () => {
   const headerY = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
 
   return (
-    <div className={`${orbitron.variable} font-sans bg-black min-h-screen relative`}>
+    <div className="font-sans bg-black min-h-screen relative">
       <GradientBackground />
       
       {/* Mobile Menu */}

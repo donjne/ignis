@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Rocket, Menu, X, Coins, Search, BarChart3, Phone, Github } from 'lucide-react';
@@ -573,7 +575,6 @@ const HomeComponent = () => {
           position: absolute;
           bottom: 0;
           width: 4px;
-          height: 60px;
           background: linear-gradient(to top, transparent, rgba(0, 255, 255, 0.5));
           filter: blur(2px);
           border-radius: 50% 50% 0 0;

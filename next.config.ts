@@ -14,9 +14,6 @@ const nextConfig: NextConfig = {
         fallback: {
           ...config.resolve?.fallback,
           fs: false,
-          crypto: false,
-          path: false,
-          os: false,
         },
       };
     }

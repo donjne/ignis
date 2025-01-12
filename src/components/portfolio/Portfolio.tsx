@@ -62,84 +62,93 @@ const Portfolio = () => {
     
     setIsLoading(true);
     try {
-      switch (activeTab) {
-        case 'assets':
-          const assetsResponse = await fetch(
-            `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=${currentPage + 1}`
-          );
-          const newAssets = await assetsResponse.json();
-          if (newAssets.length === 0) {
-            setHasMore(false);
-          } else {
-            setAssets(prev => [...prev, ...newAssets]);
-            setCurrentPage(prev => prev + 1);
-          }
-          break;
-
-        case 'transactions':
-          const lastTx = transactions[transactions.length - 1]?.signature;
-          const txResponse = await fetch(
-            `/api/portfolio/transactions?account=${publicKey.toBase58()}&cursor=${lastTx}`
-          );
-          const { transactions: newTxs, oldest } = await txResponse.json();
-          if (!oldest) {
-            setHasMore(false);
-          }
-          setTransactions(prev => [...prev, ...newTxs]);
-          break;
+      if (activeTab === 'assets') {
+        const nextPage = currentPage + 1;
+        const response = await fetch(
+          `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=${nextPage}`
+        );
+        const newAssets = await response.json();
+        
+        if (!Array.isArray(newAssets) || newAssets.length === 0) {
+          setHasMore(false);
+        } else {
+          setAssets(prev => [...prev, ...newAssets]);
+          setCurrentPage(nextPage);
+        }
+      } 
+      else if (activeTab === 'transactions') {
+        const lastTx = transactions[transactions.length - 1]?.signature;
+        if (!lastTx) {
+          setHasMore(false);
+          return;
+        }
+        
+        const response = await fetch(
+          `/api/portfolio/transactions?account=${publicKey.toBase58()}&cursor=${lastTx}`
+        );
+        const data = await response.json();
+        
+        if (!Array.isArray(data?.transactions) || data.transactions.length === 0) {
+          setHasMore(false);
+        } else {
+          setTransactions(prev => [...prev, ...data.transactions]);
+        }
       }
     } catch (err: any) {
-      setError(err.message);
+      console.error('Load more error:', err);
+      setError('Failed to load more items');
     } finally {
       setIsLoading(false);
     }
   };
 
   // Initial data loading
-const loadData = async () => {
-  if (!connected || !publicKey) return;
+  const loadData = async () => {
+    if (!connected || !publicKey) return;
+    
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Load data in parallel with error handling for each request
+      const [balanceRes, assetsRes, txRes, domainsRes] = await Promise.allSettled([
+        // Balance
+        fetch(`/api/portfolio/balance?account=${publicKey.toBase58()}`).then(res => res.json()),
+        
+        // Assets
+        fetch(`/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`).then(res => res.json()),
+        
+        // Transactions
+        fetch(`/api/portfolio/transactions?account=${publicKey.toBase58()}`).then(res => res.json()),
+        
+        // Domains
+        fetch(`/api/portfolio/domains?account=${publicKey.toBase58()}`).then(res => res.json())
+      ]);
   
-  setIsLoading(true);
-  setError('');
+      // Handle each response safely
+      if (balanceRes.status === 'fulfilled') {
+        setBalance(balanceRes.value?.balance || 0);
+      }
   
-  try {
-    // Load balance
-    const balanceResponse = await fetch(
-      `/api/portfolio/balance?account=${publicKey.toBase58()}`
-    );
-    const balanceData = await balanceResponse.json();
-    if (balanceData.balance !== undefined) {
-      setBalance(balanceData.balance);
+      if (assetsRes.status === 'fulfilled') {
+        setAssets(Array.isArray(assetsRes.value) ? assetsRes.value : []);
+      }
+  
+      if (txRes.status === 'fulfilled') {
+        setTransactions(Array.isArray(txRes.value?.transactions) ? txRes.value.transactions : []);
+      }
+  
+      if (domainsRes.status === 'fulfilled') {
+        setDomains(Array.isArray(domainsRes.value?.domains) ? domainsRes.value.domains : []);
+      }
+  
+    } catch (err: any) {
+      console.error('Data loading error:', err);
+      setError('Failed to load some portfolio data');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Load assets
-    const assetsResponse = await fetch(
-      `/api/portfolio/assets?account=${publicKey.toBase58()}&cursor=1`
-    );
-    const assetsData = await assetsResponse.json();
-    setAssets(Array.isArray(assetsData) ? assetsData : []);
-
-    // Load transactions
-    const txResponse = await fetch(
-      `/api/portfolio/transactions?account=${publicKey.toBase58()}`
-    );
-    const txData = await txResponse.json();
-    setTransactions(Array.isArray(txData.transactions) ? txData.transactions : []);
-
-    // Load domains
-    const domainsResponse = await fetch(
-      `/api/portfolio/domains?account=${publicKey.toBase58()}`
-    );
-    const domainsData = await domainsResponse.json();
-    setDomains(Array.isArray(domainsData.domains) ? domainsData.domains : []);
-
-  } catch (err: any) {
-    console.error('Data loading error:', err);
-    setError('Failed to load portfolio data');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   // Effect for initial load
   React.useEffect(() => {
@@ -179,22 +188,33 @@ const loadData = async () => {
 
   // Filter data based on search
   const filteredData = React.useMemo(() => {
+    if (!Array.isArray(assets) || !Array.isArray(transactions) || !Array.isArray(domains)) {
+      return [];
+    }
+  
     const query = searchQuery.toLowerCase();
+    
     switch (activeTab) {
       case 'assets':
-        return (assets || []).filter(asset => 
-          asset?.name?.toLowerCase().includes(query) ||
-          asset?.symbol?.toLowerCase().includes(query)
+        return assets.filter(asset => 
+          asset && typeof asset === 'object' &&
+          (asset.name?.toLowerCase().includes(query) ||
+           asset.symbol?.toLowerCase().includes(query))
         );
+      
       case 'transactions':
-        return (transactions || []).filter(tx =>
-          tx?.signature?.toLowerCase().includes(query) ||
-          tx?.type?.toLowerCase().includes(query)
+        return transactions.filter(tx => 
+          tx && typeof tx === 'object' &&
+          (tx.signature?.toLowerCase().includes(query) ||
+           tx.type?.toLowerCase().includes(query))
         );
+      
       case 'domains':
-        return (domains || []).filter(domain =>
-          domain?.toLowerCase().includes(query)
+        return domains.filter(domain => 
+          typeof domain === 'string' &&
+          domain.toLowerCase().includes(query)
         );
+      
       default:
         return [];
     }

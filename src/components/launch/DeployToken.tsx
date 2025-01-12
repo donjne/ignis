@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import WalletButton from '@/components/landing/WalletButton';
-import { Connection } from '@solana/web3.js';
+import { Connection, Transaction } from '@solana/web3.js';
 
 interface FormData {
   name: string;
@@ -23,12 +23,17 @@ interface FormData {
   initialSupply?: number;
 }
 
+interface SuccessState {
+  mint: string;
+  signature?: string;  // Make signature optional in the type
+}
+
 const DeployToken = () => {
   const router = useRouter();
   const { publicKey, signTransaction, connected } = useWallet();
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
-  const [success, setSuccess] = React.useState<{mint: string} | null>(null);
+  const [success, setSuccess] = React.useState<SuccessState | null>(null);
   const [formData, setFormData] = React.useState<FormData>({
     name: '',
     symbol: '',
@@ -69,18 +74,19 @@ const DeployToken = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!connected) {
+    if (!connected || !signTransaction || !publicKey) {
       setError('Please connect your wallet first');
       return;
     }
-
+  
     if (!validateForm()) return;
-
+  
     setIsLoading(true);
     setError('');
     setSuccess(null);
-
+  
     try {
+      // First, get the transaction from our API
       const response = await fetch('/api/deploy/token', {
         method: 'POST',
         headers: {
@@ -88,17 +94,48 @@ const DeployToken = () => {
         },
         body: JSON.stringify({
           ...formData,
-          wallet: publicKey?.toBase58()
+          walletAddress: publicKey.toBase58()
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to deploy token');
+        throw new Error(data.error || 'Failed to create transaction');
       }
+  
+      // Deserialize the transaction
+      const transaction = Transaction.from(
+        Buffer.from(data.transaction, 'base64')
+      );
+  
+      // Sign the transaction
+      const signedTx = await signTransaction(transaction);
+  
+      // Send the signed transaction
+      const connection = new Connection(
+        process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
+      );
 
-      setSuccess({ mint: data.mint });
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+  
+      const signature = await connection.sendRawTransaction(
+        signedTx.serialize()
+      );
+  
+      // Wait for confirmation
+      await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      });
+  
+      setSuccess({
+      mint: data.mint,
+      signature
+    } as SuccessState);
+  
     } catch (err: any) {
       setError(err.message || 'Failed to deploy token');
     } finally {

@@ -1,14 +1,15 @@
 // app/api/deploy/token/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { generateSigner, keypairIdentity } from "@metaplex-foundation/umi";
+import { generateSigner } from "@metaplex-foundation/umi";
 import {
   createFungible,
   mintV1,
   TokenStandard,
+  mplTokenMetadata
 } from "@metaplex-foundation/mpl-token-metadata";
-import { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { fromWeb3JsPublicKey, toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 
 export async function POST(req: NextRequest) {
@@ -26,14 +27,14 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
     );
 
-    // Create UMI instance
-    const umi = createUmi(connection.rpcEndpoint).use(mplToolbox());
-    
-    // Generate mint signer
+    const umi = createUmi(connection.rpcEndpoint)
+    .use(mplTokenMetadata())
+    .use(mplToolbox());
     const mint = generateSigner(umi);
+    const walletSigner = umi.identity;
+    const walletPubKey = new PublicKey(walletAddress);
 
-    // Create the transaction with token instructions
-    let builder = createFungible(umi, {
+    const builder = createFungible(umi, {
       name,
       uri,
       symbol,
@@ -44,20 +45,21 @@ export async function POST(req: NextRequest) {
       },
       decimals: decimals || 9,
       mint,
+      authority: walletSigner,
+      payer: walletSigner
     });
 
     if (initialSupply) {
-      builder = builder.add(
+      builder.add(
         mintV1(umi, {
           mint: mint.publicKey,
           tokenStandard: TokenStandard.Fungible,
-          tokenOwner: fromWeb3JsPublicKey(new PublicKey(walletAddress)),
+          tokenOwner: fromWeb3JsPublicKey(walletPubKey),
           amount: initialSupply * Math.pow(10, decimals || 9),
-        }),
+        })
       );
     }
 
-    // Get transaction and serialize it
     const tx = await builder.buildWithLatestBlockhash(umi);
 
     return NextResponse.json({

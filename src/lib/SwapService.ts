@@ -1,11 +1,17 @@
-'use client'
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
-import { mplCore, fetchAsset } from '@metaplex-foundation/mpl-core';
-import { generateSigner, publicKey as toPublicKey, Signer } from '@metaplex-foundation/umi';
-import { fetchToken, findAssociatedTokenPda } from '@metaplex-foundation/mpl-toolbox';
-import { Connection, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
-import { WalletContextState } from '@solana/wallet-adapter-react';
+import { 
+  releaseV1, 
+  captureV1, 
+  fetchEscrowV1 
+} from '@metaplex-foundation/mpl-hybrid';
+import { 
+  fetchToken, 
+  findAssociatedTokenPda,
+  createTokenIfMissing
+} from '@metaplex-foundation/mpl-toolbox';
+import { publicKey } from '@metaplex-foundation/umi';
+import { fetchAsset, fetchCollection } from '@metaplex-foundation/mpl-core';
+import { type SwapConfig } from '../types/swapConfig';
+import { EscrowSetupService } from './EscrowSetupService';
 
 export interface SwapError extends Error {
   code?: string;
@@ -13,106 +19,176 @@ export interface SwapError extends Error {
 }
 
 export class SwapService {
-  private static SWAP_PROGRAM_ID = 'YOUR_PROGRAM_ID';
-  private static TOKEN_MINT = 'YOUR_TOKEN_MINT';
-  private static COLLECTION = 'YOUR_COLLECTION';
-  private static TOKEN_PER_NFT = 100;
-  
-  private umi;
-  private connection: Connection;
-  private wallet?: WalletContextState;
+  private escrowSetupService: EscrowSetupService;
+  private config: SwapConfig;
+  public readonly umi;
 
-  constructor(wallet?: WalletContextState) {
-    this.connection = new Connection('https://api.devnet.solana.com');
-    this.umi = createUmi('https://api.devnet.solana.com')
-      .use(mplTokenMetadata())
-      .use(mplCore());
-    
-    if (wallet) {
-      this.wallet = wallet;
+  constructor(config: SwapConfig) {
+    this.config = config;
+    this.escrowSetupService = new EscrowSetupService(config);
+    this.umi = this.escrowSetupService.umi;
+  }
+
+  async setupAndValidateEscrow() {
+    try {
+      console.log('Starting escrow setup and validation...');
+
+      const escrowData = await this.validateEscrow().catch(async () => {
+        console.log('Escrow not found, initializing new escrow...');
+        await this.escrowSetupService.initializeEscrow();
+        await this.escrowSetupService.addDelegates();
+        await this.escrowSetupService.fundEscrow();
+        return await this.validateEscrow();
+      });
+
+      return escrowData;
+    } catch (error) {
+      console.error('Escrow setup and validation failed:', error);
+      throw this.handleError(error);
     }
   }
 
-  async swapNftForTokens(nftMint: string): Promise<string> {
+  private async validateEscrow() {
     try {
-      if (!this.wallet?.publicKey || !this.wallet.signTransaction) {
-        throw new Error('Wallet not connected');
+      const escrowData = await fetchEscrowV1(
+        this.umi,
+        this.escrowSetupService.escrowAddress
+      );
+
+      if (!escrowData) {
+        throw new Error('Escrow data not found');
       }
 
-      // 1. Verify NFT ownership and collection
-      await this.verifyNftOwnership(nftMint);
+      // Additional validation
+      if (
+        escrowData.collection.toString() !== this.config.collection ||
+        escrowData.token.toString() !== this.config.tokenMint ||
+        escrowData.authority.toString() !== this.config.authority ||
+        Number(escrowData.amount) !== this.config.tokenPerNft
+      ) {
+        throw new Error('Escrow configuration mismatch');
+      }
 
-      // 2. Create swap instruction
-      const swapInstruction = await this.createSwapNftInstruction(nftMint);
+      return escrowData;
+    } catch (error) {
+      console.error('Escrow validation failed:', error);
+      throw error;
+    }
+  }
 
-      // 3. Create and send transaction
-      const transaction = new Transaction().add(swapInstruction);
-      transaction.feePayer = this.wallet.publicKey;
-      
-      const latestBlockhash = await this.connection.getLatestBlockhash();
-      transaction.recentBlockhash = latestBlockhash.blockhash;
+  private async getEscrowTokenBalance(): Promise<number> {
+    const escrowTokenAccount = findAssociatedTokenPda(this.umi, {
+      mint: publicKey(this.config.tokenMint),
+      owner: publicKey(this.escrowSetupService.escrowAddress)
+    });
 
-      const signedTx = await this.wallet.signTransaction(transaction);
-      const signature = await this.connection.sendRawTransaction(signedTx.serialize());
-      await this.connection.confirmTransaction(signature);
+    const token = await fetchToken(this.umi, escrowTokenAccount);
+    return Number(token.amount);
+  }
 
-      return signature;
+  async swapNftForTokens(nftMint: string) {
+    try {
+      await this.verifyCollection();
+      await this.setupAndValidateEscrow();
 
+      // Get token account for the wallet
+      const walletTokenAccount = findAssociatedTokenPda(this.umi, {
+        mint: publicKey(this.config.tokenMint),
+        owner: this.umi.identity.publicKey
+      });
+
+      // Get fee wallet's token account
+      const feeTokenAccount = findAssociatedTokenPda(this.umi, {
+        mint: publicKey(this.config.tokenMint),
+        owner: publicKey(this.config.authority)
+      });
+
+      console.log('Creating token account if needed...');
+      const createTokenAccountTx = await createTokenIfMissing(this.umi, {
+        mint: publicKey(this.config.tokenMint),
+        owner: this.umi.identity.publicKey,
+        token: walletTokenAccount,
+      });
+
+      // Wait for token account creation to be confirmed
+      if (createTokenAccountTx.items.length > 0) {
+        await createTokenAccountTx.sendAndConfirm(this.umi);
+      }
+
+      // Execute the NFT to tokens swap
+      const tx = await releaseV1(this.umi, {
+        owner: this.umi.identity,
+        escrow: publicKey(this.escrowSetupService.escrowAddress),
+        asset: publicKey(nftMint),
+        collection: publicKey(this.config.collection),
+        feeProjectAccount: publicKey(this.config.authority),
+        feeTokenAccount: feeTokenAccount,
+        token: publicKey(this.config.tokenMint),
+      });
+
+      return await tx.sendAndConfirm(this.umi);
     } catch (error) {
       console.error('NFT to tokens swap failed:', error);
       throw this.handleError(error);
     }
   }
 
-  async swapTokensForNft(nftMint: string): Promise<string> {
+  async swapTokensForNft(nftMint: string) {
     try {
-      if (!this.wallet?.publicKey || !this.wallet.signTransaction) {
-        throw new Error('Wallet not connected');
-      }
+      await this.setupAndValidateEscrow();
 
-      // 1. Verify token balance
-      const balance = await this.getTokenBalance();
-      if (balance < SwapService.TOKEN_PER_NFT) {
-        throw new Error('Insufficient token balance');
-      }
+      const walletTokenAccount = findAssociatedTokenPda(this.umi, {
+        mint: publicKey(this.config.tokenMint),
+        owner: this.umi.identity.publicKey
+      });
 
-      // 2. Create swap instruction
-      const swapInstruction = await this.createSwapTokenInstruction(nftMint);
+      const feeTokenAccount = findAssociatedTokenPda(this.umi, {
+        mint: publicKey(this.config.tokenMint),
+        owner: publicKey(this.config.authority)
+      });
 
-      // 3. Create and send transaction
-      const transaction = new Transaction().add(swapInstruction);
-      transaction.feePayer = this.wallet.publicKey;
-      
-      const latestBlockhash = await this.connection.getLatestBlockhash();
-      transaction.recentBlockhash = latestBlockhash.blockhash;
+      const tx = await captureV1(this.umi, {
+        owner: this.umi.identity,
+        escrow: this.escrowSetupService.escrowAddress,
+        asset: publicKey(nftMint),
+        collection: publicKey(this.config.collection),
+        feeProjectAccount: publicKey(this.config.authority),
+        feeTokenAccount: feeTokenAccount,
+        token: publicKey(this.config.tokenMint),
+      });
 
-      const signedTx = await this.wallet.signTransaction(transaction);
-      const signature = await this.connection.sendRawTransaction(signedTx.serialize());
-      await this.connection.confirmTransaction(signature);
-
-      return signature;
-
+      return await tx.sendAndConfirm(this.umi);
     } catch (error) {
       console.error('Tokens to NFT swap failed:', error);
       throw this.handleError(error);
     }
   }
 
+  private handleError(error: any): SwapError {
+    const swapError: SwapError = new Error(error.message || 'Swap failed');
+    swapError.code = error.code || 'UNKNOWN_ERROR';
+    swapError.details = error;
+    return swapError;
+  }
+
+  async getAvailableNftMints(): Promise<string[]> {
+    // This would typically fetch from your backend or blockchain
+    // For now returning an empty array as placeholder
+    return [];
+  }
+
   async getTokenBalance(): Promise<number> {
     try {
-      if (!this.wallet?.publicKey) {
-        return 0;
-      }
-
       const tokenAccount = findAssociatedTokenPda(this.umi, {
-        mint: toPublicKey(SwapService.TOKEN_MINT),
-        owner: toPublicKey(this.wallet.publicKey.toBase58())
+        mint: publicKey(this.config.tokenMint),
+        owner: this.umi.identity.publicKey
       });
-
+  
       try {
         const token = await fetchToken(this.umi, tokenAccount);
         return Number(token.amount);
       } catch (error: any) {
+        // If account doesn't exist, return 0 balance
         if (error.name === 'AccountNotFoundError') {
           return 0;
         }
@@ -124,59 +200,49 @@ export class SwapService {
     }
   }
 
-  async getAvailableNftMints(): Promise<string[]> {
+  async verifyCollection() {
     try {
-      if (!this.wallet?.publicKey) {
-        return [];
-      }
-
-      // You would implement this based on your smart contract's state
-      // This could query for NFTs in the swap pool or owned by the user
-      return [];
-    } catch (error) {
-      console.error('Failed to get available NFTs:', error);
-      return [];
-    }
-  }
-
-  private async verifyNftOwnership(nftMint: string): Promise<boolean> {
-    try {
-      if (!this.wallet?.publicKey) {
-        throw new Error('Wallet not connected');
-      }
-
-      const asset = await fetchAsset(this.umi, toPublicKey(nftMint));
+      console.log('Verifying collection...');
+      const collection = publicKey(this.config.collection);
       
-      if (asset.updateAuthority.toString() !== this.wallet.publicKey.toString()) {
-        throw new Error('NFT not owned by wallet');
-      }
+      const collectionData = await fetchCollection(this.umi, collection);
+      console.log('Collection data:', collectionData);
 
-      // Add additional collection verification if needed
+      const isValid = collectionData.updateAuthority.toString() === this.config.authority;
+
+      if (!isValid) {
+        throw new Error('Collection authority mismatch');
+      }
 
       return true;
     } catch (error) {
+      console.error('Collection verification failed:', error);
       throw this.handleError(error);
     }
   }
 
-  private async createSwapNftInstruction(nftMint: string): Promise<any> {
-    // This would create the instruction based on your smart contract's interface
-    throw new Error('Not implemented');
-  }
-
-  private async createSwapTokenInstruction(nftMint: string): Promise<any> {
-    // This would create the instruction based on your smart contract's interface
-    throw new Error('Not implemented');
-  }
-
-  private handleError(error: any): SwapError {
-    const swapError: SwapError = new Error(error.message || 'Swap failed');
-    swapError.code = error.code || 'UNKNOWN_ERROR';
-    swapError.details = error;
-    return swapError;
-  }
-
   getTokensPerNft(): number {
-    return SwapService.TOKEN_PER_NFT;
+    return this.config.tokenPerNft;
+  }
+
+  async getEscrowAddress(): Promise<string> {
+    return this.escrowSetupService.escrowAddress.toString();
+  }
+  
+  async getAssociatedAccounts() {
+    const escrowTokenAccount = findAssociatedTokenPda(this.umi, {
+      mint: publicKey(this.config.tokenMint),
+      owner: publicKey(this.escrowSetupService.escrowAddress)
+    });
+  
+    const feeTokenAccount = findAssociatedTokenPda(this.umi, {
+      mint: publicKey(this.config.tokenMint),
+      owner: publicKey(this.config.authority)
+    });
+  
+    return {
+      escrowTokenAccount: escrowTokenAccount.toString(),
+      feeTokenAccount: feeTokenAccount.toString()
+    };
   }
 }

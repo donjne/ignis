@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Rocket, Menu, X, Coins, Search, BarChart3, Phone, Github } from 'lucide-react';
+import { Rocket, Menu, X, Coins, RefreshCw, BarChart3, Phone, Github } from 'lucide-react';
 import WalletButton from '@/components/landing/WalletButton';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -269,14 +269,15 @@ const HomeComponent = () => {
                 <Coins className="inline-block mr-2 h-4 w-4" />
                 START CREATING
               </motion.button>
-              {/* <motion.button
+              <motion.button
                 className="px-6 sm:px-8 py-3 sm:py-4 rounded-lg border border-white/20 text-white font-medium hover:bg-white/5 transition-all duration-300 text-sm sm:text-base font-orbitron"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/swap')}
               >
-                <Search className="inline-block mr-2 h-4 w-4" />
-                EXPLORE TOKENS
-              </motion.button> */}
+                <RefreshCw className="inline-block mr-2 h-4 w-4" />
+                SWAP ASSETS
+              </motion.button>
             </motion.div>
           </motion.div>
 

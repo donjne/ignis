@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Rocket, Menu, X, Coins, BarChart3, Phone } from 'lucide-react';
+import { Rocket, Menu, X, Coins, BarChart3, Phone, RefreshCw } from 'lucide-react';
 import WalletButton from '@/components/landing/WalletButton';
 
 interface NavbarProps {
@@ -68,6 +68,10 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void; currentPath: 
         <Coins className="inline-block mr-2 h-4 w-4" />
         LAUNCH
       </NavLink>
+      <NavLink href="/swap" onClick={onClose} isActive={currentPath === '/swap'}>
+        <RefreshCw className="inline-block mr-2 h-4 w-4" />
+        SWAP
+      </NavLink>
       <NavLink href="/portfolio" onClick={onClose} isActive={currentPath === '/portfolio'}>
         <BarChart3 className="inline-block mr-2 h-4 w-4" />
         PORTFOLIO
@@ -130,6 +134,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath }) => {
               <NavLink href="/launch" isActive={currentPath === '/launch'}>
                 <Coins className="inline-block mr-2 h-4 w-4" />
                 LAUNCH
+              </NavLink>
+              <NavLink href="/portfolio" isActive={currentPath === '/swap'}>
+                <RefreshCw className="inline-block mr-2 h-4 w-4" />
+                SWAP
               </NavLink>
               <NavLink href="/portfolio" isActive={currentPath === '/portfolio'}>
                 <BarChart3 className="inline-block mr-2 h-4 w-4" />

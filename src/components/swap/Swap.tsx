@@ -104,19 +104,22 @@ const SwapPage: React.FC = () => {
     }
   };
 
+  // Show config form when not configured or when editing config
   if (!isConfigured || showConfig) {
     return (
       <div className="min-h-screen bg-black text-white">
         <div className="container mx-auto px-4 py-16">
-          <SwapConfigForm />
+          <SwapConfigForm isModifying={isConfigured} />
         </div>
       </div>
     );
   }
 
+  // Main swap interface
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-16">
+        {/* Header */}
         <div className="flex justify-between mb-8">
           <button
             onClick={() => setShowConfig(true)}
@@ -127,6 +130,7 @@ const SwapPage: React.FC = () => {
           <WalletButton />
         </div>
 
+        {/* Title */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400">
             Swap Assets
@@ -136,9 +140,10 @@ const SwapPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Swap Interface */}
         <div className="max-w-xl mx-auto">
           <div className="relative bg-black/40 backdrop-blur-sm p-8 rounded-xl border border-cyan-500/20">
-            {/* Swap Direction Toggle */}
+            {/* Direction Toggle */}
             <div className="flex justify-end mb-6">
               <button
                 onClick={handleSwapDirectionToggle}
@@ -227,8 +232,10 @@ const SwapPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Addresses Section */}
+        <SwapAddresses escrowAddress={escrowAddress} />
       </div>
-      <SwapAddresses escrowAddress={escrowAddress} />
     </div>
   );
 };

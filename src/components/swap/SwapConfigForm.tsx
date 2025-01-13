@@ -1,10 +1,36 @@
 "use client"
 import React, { useState } from 'react';
 import { useSwapConfig } from '../../contexts/swapConfigContext';
+import { ArrowLeft, Info } from 'lucide-react';
+import { SwapConfig } from '@/types/swapConfig';
+import { useRouter } from 'next/navigation';
 
-const SwapConfigForm = () => {
+const tooltips: Record<keyof SwapConfig, string> = {
+  collection: "The public key of the NFT collection that will be used for swapping",
+  tokenMint: "The token mint address that users will receive when swapping their NFTs",
+  authority: "The authority address that controls the escrow and receives fees",
+  escrowName: "A name for your escrow account for easy identification",
+  tokenPerNft: "The amount of tokens users will receive for each NFT they swap",
+  tokenFee: "The fee amount in tokens charged for each swap",
+  baseUri: "The base URI for NFT metadata",
+  minIndex: "The minimum index for NFT minting",
+  maxIndex: "The maximum index for NFT minting",
+  solFee: "The fee amount in SOL charged for each swap",
+  initialFundingAmount: "Initial amount of tokens to fund the escrow with"
+};
+
+interface FormFieldProps {
+  name: keyof SwapConfig;
+  label: string;
+  type?: string;
+  placeholder?: string;
+}
+
+const SwapConfigForm = ({ isModifying = false }: { isModifying?: boolean }) => {
+  const router = useRouter();
   const { setConfig } = useSwapConfig();
-  const [formData, setFormData] = useState({
+  const [activeTooltip, setActiveTooltip] = useState<keyof SwapConfig | null>(null);
+  const [formData, setFormData] = useState<SwapConfig>({
     collection: '',
     tokenMint: '',
     authority: '',
@@ -28,137 +54,122 @@ const SwapConfigForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // const requiredFields = ['collection', 'tokenMint', 'authority', 'escrowName'];
-    // const missingFields = requiredFields.filter(field => !formData[field]);
-    
-    // if (missingFields.length > 0) {
-    //     alert(`Please fill in the following fields: ${missingFields.join(', ')}`);
-    //     return;
-    // }
     setConfig(formData);
   };
+
+  const handleBack = () => {
+    if (isModifying) {
+      // Go back to swap interface
+      window.history.back();
+    } else {
+      // Go back to home page
+      router.push('/');
+    }
+  };
+
+  const FormField: React.FC<FormFieldProps> = ({ 
+    name, 
+    label, 
+    type = "text", 
+    placeholder 
+  }) => (
+    <div className="space-y-2 relative">
+      <div className="flex items-center gap-2">
+        <label 
+          htmlFor={name}
+          className="block text-sm font-medium text-gray-200"
+        >
+          {label}
+        </label>
+        <button
+          type="button"
+          onMouseEnter={() => setActiveTooltip(name)}
+          onMouseLeave={() => setActiveTooltip(null)}
+          className="p-1 hover:bg-cyan-500/20 rounded-full transition-colors"
+        >
+          <Info className="w-4 h-4 text-cyan-400" />
+        </button>
+      </div>
+      {activeTooltip === name && (
+        <div className="absolute z-10 top-8 left-0 w-64 p-2 bg-gray-900 rounded-md shadow-lg border border-cyan-500/20">
+          <p className="text-sm text-gray-300">{tooltips[name]}</p>
+        </div>
+      )}
+      <input
+        id={name}
+        name={name}
+        type={type}
+        value={formData[name]}
+        onChange={handleInputChange}
+        className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
+                 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent
+                 placeholder-gray-500"
+        placeholder={placeholder}
+      />
+    </div>
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-black/40 backdrop-blur-sm border border-cyan-500/20 rounded-lg overflow-hidden">
       <div className="p-6">
-        <h2 className="text-2xl text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400 font-bold mb-6">
-          Configure Swap
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={handleBack}
+            className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 transition-colors flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4 text-cyan-400" />
+            <span className="text-cyan-400">
+              {isModifying ? 'Back to Swap' : 'Back to Home'}
+            </span>
+          </button>
+          <h2 className="text-2xl text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-teal-400 font-bold">
+            Configure Swap
+          </h2>
+        </div>
         
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label 
-                  htmlFor="collection" 
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Collection Address
-                </label>
-                <input
-                  id="collection"
-                  name="collection"
-                  value={formData.collection}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
-                           focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent
-                           placeholder-gray-500"
-                  placeholder="Collection public key"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label 
-                  htmlFor="tokenMint" 
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Token Mint
-                </label>
-                <input
-                  id="tokenMint"
-                  name="tokenMint"
-                  value={formData.tokenMint}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
-                           focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent
-                           placeholder-gray-500"
-                  placeholder="Token mint address"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label 
-                  htmlFor="authority" 
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Authority
-                </label>
-                <input
-                  id="authority"
-                  name="authority"
-                  value={formData.authority}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
-                           focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent
-                           placeholder-gray-500"
-                  placeholder="Authority address"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label 
-                  htmlFor="escrowName" 
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Escrow Name
-                </label>
-                <input
-                  id="escrowName"
-                  name="escrowName"
-                  value={formData.escrowName}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
-                           focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent
-                           placeholder-gray-500"
-                  placeholder="Name for the escrow"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label 
-                  htmlFor="tokenPerNft" 
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Tokens per NFT
-                </label>
-                <input
-                  type="number"
-                  id="tokenPerNft"
-                  name="tokenPerNft"
-                  value={formData.tokenPerNft}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
-                           focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label 
-                  htmlFor="tokenFee" 
-                  className="block text-sm font-medium text-gray-200"
-                >
-                  Token Fee
-                </label>
-                <input
-                  type="number"
-                  id="tokenFee"
-                  name="tokenFee"
-                  value={formData.tokenFee}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-black/50 border border-cyan-500/20 rounded-md text-white 
-                           focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent"
-                />
-              </div>
+              <FormField 
+                name="collection" 
+                label="Collection Address"
+                placeholder="Collection public key"
+              />
+              <FormField 
+                name="tokenMint" 
+                label="Token Mint"
+                placeholder="Token mint address"
+              />
+              <FormField 
+                name="authority" 
+                label="Authority"
+                placeholder="Authority address"
+              />
+              <FormField 
+                name="escrowName" 
+                label="Escrow Name"
+                placeholder="Name for the escrow"
+              />
+              <FormField 
+                name="tokenPerNft" 
+                label="Tokens per NFT"
+                type="number"
+              />
+              <FormField 
+                name="tokenFee" 
+                label="Token Fee"
+                type="number"
+              />
+              <FormField 
+                name="solFee" 
+                label="SOL Fee"
+                type="number"
+              />
+              <FormField 
+                name="initialFundingAmount" 
+                label="Initial Funding"
+                type="number"
+              />
             </div>
 
             <button

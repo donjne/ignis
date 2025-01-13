@@ -93,6 +93,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon: Icon, title, descriptio
 const Footer: React.FC = () => {
   const footerLinks = [
     { href: '/launch', label: 'Launch' },
+    { href: '/swap', label: 'Swap' },
     { href: '/portfolio', label: 'Portfolio' },
     { href: '/contact', label: 'Contact' }
   ];
